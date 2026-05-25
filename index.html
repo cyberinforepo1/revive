@@ -980,8 +980,8 @@ function renderMatrix() {
 
   // Column headers
   let hRow = `<tr><th class="corner">↓ Після \ До →</th>`;
-  PROCS.forEach(([id, label, cat]) => {
-    hRow += `<th class="col-hdr"><span class="ch-text">${label}</span><span class="ch-cat">${cat}</span></th>`;
+  PROCS.forEach(({ label, category }) => {
+    hRow += `<th class="col-hdr"><span class="ch-text">${label}</span><span class="ch-cat">${category}</span></th>`;
   });
   hRow += '</tr>';
   head.innerHTML = hRow;
