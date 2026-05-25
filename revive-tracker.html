@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Протокол лікування — Revive Clinic</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#f5f2ec;
+  --white:#ffffff;
+  --ink:#1a1c18;
+  --green:#2d5a3d;
+  --green-light:#3d7a52;
+  --green-pale:#e8f0eb;
+  --green-mid:#c8dace;
+  --gold:#8a7a5a;
+  --gold-pale:#f0ebe0;
+  --muted:#6b6b5a;
+  --border:#d5cfc4;
+  --border-light:#e8e4dc;
+}
+
+html{scroll-behavior:smooth}
+body{font-family:'Jost',sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.6;min-height:100vh}
+
+/* ── HEADER ── */
+.site-header{background:var(--ink);padding:0}
+.header-inner{max-width:900px;margin:0 auto;padding:20px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.clinic-name{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:400;color:#fff;letter-spacing:.04em}
+.clinic-name span{color:var(--green-mid);font-style:italic}
+.header-meta{text-align:right}
+.header-meta p{font-size:11px;color:rgba(255,255,255,.45);letter-spacing:.08em;text-transform:uppercase;line-height:1.4}
+.header-meta strong{color:rgba(255,255,255,.75);font-weight:500}
+
+/* ── PATIENT CARD ── */
+.patient-banner{background:var(--green);padding:16px 24px}
+.patient-inner{max-width:900px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.patient-info h2{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:400;color:#fff;line-height:1.2}
+.patient-info p{font-size:12px;color:rgba(255,255,255,.65);margin-top:2px}
+.patient-stats{display:flex;gap:20px}
+.stat{text-align:center}
+.stat-num{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:400;color:var(--green-mid);line-height:1}
+.stat-label{font-size:10px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.08em;margin-top:2px}
+
+/* ── PROGRESS BAR ── */
+.progress-strip{background:var(--ink);padding:10px 24px}
+.progress-inner{max-width:900px;margin:0 auto}
+.progress-row{display:flex;align-items:center;gap:12px}
+.progress-label{font-size:11px;color:rgba(255,255,255,.5);white-space:nowrap;letter-spacing:.06em;text-transform:uppercase;min-width:120px}
+.progress-track{flex:1;height:4px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:var(--green-light);border-radius:2px;transition:width .4s ease;width:0%}
+.progress-pct{font-size:12px;color:var(--green-mid);font-weight:600;min-width:36px;text-align:right}
+
+/* ── TABS ── */
+.tabs-wrap{background:var(--white);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50}
+.tabs{max-width:900px;margin:0 auto;display:flex;padding:0 24px}
+.tab-btn{font-family:'Jost',sans-serif;font-size:12px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;padding:14px 20px;border:none;background:none;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap}
+.tab-btn.active{color:var(--green);border-bottom-color:var(--green)}
+.tab-btn:hover:not(.active){color:var(--ink)}
+
+/* ── MAIN ── */
+.main{max-width:900px;margin:0 auto;padding:28px 24px 60px}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+/* ── SECTION HEADER ── */
+.sec-head{display:flex;align-items:center;gap:12px;margin-bottom:16px;margin-top:28px}
+.sec-head:first-child{margin-top:0}
+.sec-icon{width:28px;height:28px;background:var(--green-pale);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.sec-title{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:400;color:var(--ink)}
+.sec-line{flex:1;height:1px;background:var(--border-light)}
+
+/* ── PROTOCOL TABLE ── */
+.proto-table{width:100%;border-collapse:collapse;font-size:13px}
+.proto-table th{background:var(--ink);color:#fff;font-weight:500;font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:8px 12px;text-align:left}
+.proto-table td{padding:8px 12px;border-bottom:1px solid var(--border-light);vertical-align:top;line-height:1.4}
+.proto-table tr:nth-child(even) td{background:var(--green-pale)}
+.proto-table tr:last-child td{border-bottom:none}
+.proto-table .item-name{font-weight:500;color:var(--ink)}
+.proto-table .item-dose{color:var(--muted);font-size:12px}
+.duration-pill{display:inline-block;font-size:10px;font-weight:600;letter-spacing:.06em;padding:2px 8px;border-radius:10px;background:var(--green-pale);color:var(--green)}
+
+/* ── PROCEDURE CARDS ── */
+.proc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-bottom:8px}
+.proc-card{background:var(--white);border:1px solid var(--border);padding:16px;position:relative;overflow:hidden}
+.proc-card::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--green)}
+.proc-card-name{font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:400;color:var(--ink);margin-bottom:6px;line-height:1.3}
+.proc-meta{font-size:12px;color:var(--muted);line-height:1.6}
+.proc-meta strong{color:var(--ink);font-weight:500}
+.proc-tag{display:inline-block;font-size:10px;font-weight:600;letter-spacing:.06em;padding:2px 8px;margin-top:8px;background:var(--gold-pale);color:var(--gold)}
+.aftercare-box{background:var(--gold-pale);border-left:3px solid var(--gold);padding:14px 16px;margin-top:8px;font-size:12px;line-height:1.7;color:var(--ink)}
+.aftercare-box strong{color:var(--gold);font-size:11px;letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:6px}
+
+/* ── TRACKER ── */
+.week-block{margin-bottom:24px}
+.week-header{background:var(--ink);padding:10px 16px;display:flex;align-items:center;justify-content:space-between}
+.week-title{font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:400;color:#fff}
+.week-score{font-size:12px;color:var(--green-mid);font-weight:600}
+.week-days{display:grid;grid-template-columns:repeat(7,1fr);gap:0}
+.day-col{border-right:1px solid var(--border-light);background:var(--white)}
+.day-col:last-child{border-right:none}
+.day-name{background:var(--green);color:#fff;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;text-align:center;padding:6px 2px}
+.day-name.weekend{background:var(--green-light)}
+.day-tasks{padding:6px 4px}
+.task-row{display:flex;align-items:flex-start;gap:4px;margin-bottom:3px;cursor:pointer;user-select:none}
+.task-row:last-child{margin-bottom:0}
+.task-cb{width:12px;height:12px;border:1.5px solid var(--border);background:var(--white);flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:all .15s;border-radius:2px}
+.task-cb.checked{background:var(--green);border-color:var(--green)}
+.task-cb.checked::after{content:'✓';color:#fff;font-size:8px;line-height:1}
+.task-text{font-size:9px;color:var(--ink);line-height:1.3}
+.task-row.done .task-text{color:var(--muted);text-decoration:line-through}
+.section-divider{background:var(--green-pale);font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--green);padding:3px 4px;margin:4px 0 2px;text-align:center}
+.week-notes{border-top:1px solid var(--border-light);background:var(--white);padding:8px 12px}
+.week-notes textarea{width:100%;border:none;outline:none;font-family:'Jost',sans-serif;font-size:11px;color:var(--muted);resize:none;background:transparent;height:28px}
+.week-notes textarea::placeholder{color:var(--border)}
+
+/* ── ADHERENCE CHART ── */
+.chart-wrap{background:var(--white);border:1px solid var(--border);padding:20px;margin-bottom:24px}
+.chart-title{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:16px}
+.chart-bars{display:flex;align-items:flex-end;gap:8px;height:80px;padding-bottom:20px;position:relative}
+.chart-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end}
+.chart-bar{width:100%;background:var(--green-pale);border-radius:2px 2px 0 0;transition:height .5s ease;min-height:2px;position:relative}
+.chart-bar.filled{background:var(--green)}
+.chart-bar-label{font-size:9px;color:var(--muted);text-align:center;position:absolute;bottom:-18px;width:100%;letter-spacing:.04em}
+.chart-pct{font-size:9px;color:var(--green);font-weight:600;text-align:center;margin-bottom:2px}
+.chart-baseline{position:absolute;bottom:20px;left:0;right:0;height:1px;background:var(--border-light)}
+
+/* ── PRINT ── */
+@media print{
+  .tabs-wrap,.progress-strip{display:none}
+  .tab-panel{display:block!important}
+  .site-header,.patient-banner{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .week-block{page-break-inside:avoid}
+  body{background:#fff}
+}
+
+@media(max-width:600px){
+  .patient-stats{display:none}
+  .tabs{overflow-x:auto;scrollbar-width:none}
+  .tabs::-webkit-scrollbar{display:none}
+  .proc-grid{grid-template-columns:1fr}
+  .week-days{grid-template-columns:repeat(7,1fr);font-size:8px}
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="site-header">
+  <div class="header-inner">
+    <div class="clinic-name">Revive <span>Clinic</span></div>
+    <div class="header-meta">
+      <p>Care Assistant · Персональний план лікування</p>
+      <p><strong>Львів, вул. Зелена 204А</strong></p>
+    </div>
+  </div>
+</header>
+
+<!-- PATIENT BANNER -->
+<div class="patient-banner">
+  <div class="patient-inner">
+    <div class="patient-info">
+      <h2>Протокол лікування</h2>
+      <p>Дерматологія · Себорейний та акнеформний дерматит · 10.05 — 09.06.2026</p>
+    </div>
+    <div class="patient-stats">
+      <div class="stat"><div class="stat-num">31</div><div class="stat-label">днів</div></div>
+      <div class="stat"><div class="stat-num">12</div><div class="stat-label">позицій</div></div>
+      <div class="stat"><div class="stat-num">6</div><div class="stat-label">тижнів</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- PROGRESS -->
+<div class="progress-strip">
+  <div class="progress-inner">
+    <div class="progress-row">
+      <span class="progress-label">Загальний прогрес</span>
+      <div class="progress-track"><div class="progress-fill" id="totalProgress"></div></div>
+      <span class="progress-pct" id="totalPct">0%</span>
+    </div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs-wrap">
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('plan',this)">План лікування</button>
+    <button class="tab-btn" onclick="switchTab('procedures',this)">Процедури</button>
+    <button class="tab-btn" onclick="switchTab('tracker',this)">Трекер</button>
+  </div>
+</div>
+
+<div class="main">
+
+<!-- ═══ TAB 1: ПЛАН ЛІКУВАННЯ ═══ -->
+<div class="tab-panel active" id="tab-plan">
+
+  <div class="sec-head">
+    <div class="sec-icon">☀</div>
+    <h2 class="sec-title">Ранок — нутрицевтики</h2>
+    <div class="sec-line"></div>
+  </div>
+
+  <table class="proto-table">
+    <tr><th>Препарат</th><th>Дозування</th><th>Час прийому</th><th>Тривалість</th></tr>
+    <tr><td><div class="item-name">Optibac Every Day Extra</div></td><td>1 капсула</td><td>Під час сніданку</td><td><span class="duration-pill">90 днів</span></td></tr>
+    <tr><td><div class="item-name">Cenitol Metagenics</div></td><td>2 ложки після їжі</td><td>Ранок</td><td><span class="duration-pill">3 місяці</span></td></tr>
+    <tr><td><div class="item-name">Meta I 3C Metagenics</div></td><td>1 таблетка</td><td>Ранок</td><td><span class="duration-pill">5 місяців</span></td></tr>
+    <tr><td><div class="item-name">EPA DHA Metagenics</div><div class="item-dose">Після 2 міс — знизити до 1 капс</div></td><td>2 капс → 1 капс</td><td>Ранок</td><td><span class="duration-pill">6 місяців</span></td></tr>
+  </table>
+
+  <div class="sec-head">
+    <div class="sec-icon">🌙</div>
+    <h2 class="sec-title">Вечір — нутрицевтики</h2>
+    <div class="sec-line"></div>
+  </div>
+
+  <table class="proto-table">
+    <tr><th>Препарат</th><th>Дозування</th><th>Час прийому</th><th>Тривалість</th></tr>
+    <tr><td><div class="item-name">Glutagenics Metagenics</div></td><td>1 ложка після їжі</td><td>Вечір</td><td><span class="duration-pill">3 місяці</span></td></tr>
+  </table>
+
+  <div class="sec-head">
+    <div class="sec-icon">✨</div>
+    <h2 class="sec-title">Ранковий догляд</h2>
+    <div class="sec-line"></div>
+  </div>
+
+  <table class="proto-table">
+    <tr><th>Засіб</th><th>Спосіб застосування</th><th>Примітка</th><th></th></tr>
+    <tr><td><div class="item-name">Lait SR BR</div></td><td>Вмивання двічі підряд, 2–3 хв</td><td>—</td><td><span class="duration-pill">щодня</span></td></tr>
+    <tr><td><div class="item-name">P50 V BR</div></td><td>Лосьйон</td><td>Перші 3 тижні — мокрий спонж, далі — сухий</td><td><span class="duration-pill">щодня</span></td></tr>
+    <tr><td><div class="item-name">Dermopurifiante BR</div></td><td>Крем</td><td>—</td><td><span class="duration-pill">щодня</span></td></tr>
+    <tr><td><div class="item-name">SPF Sensitive Histolab</div></td><td>Сонцезахист</td><td>Обов'язково після крему</td><td><span class="duration-pill">щодня</span></td></tr>
+  </table>
+
+  <div class="sec-head">
+    <div class="sec-icon">🌙</div>
+    <h2 class="sec-title">Вечірній догляд</h2>
+    <div class="sec-line"></div>
+  </div>
+
+  <table class="proto-table">
+    <tr><th>Засіб</th><th>Спосіб застосування</th><th>Примітка</th><th></th></tr>
+    <tr><td><div class="item-name">Lait SR BR</div></td><td>Вмивання двічі підряд, 2–3 хв</td><td>—</td><td><span class="duration-pill">щодня</span></td></tr>
+    <tr><td><div class="item-name">Serum Ext Tissulaires BR</div></td><td>Сироватка</td><td>—</td><td><span class="duration-pill">щодня</span></td></tr>
+    <tr><td><div class="item-name">Dermopurifiante BR</div></td><td>Крем</td><td>—</td><td><span class="duration-pill">щодня</span></td></tr>
+  </table>
+
+  <div class="sec-head">
+    <div class="sec-icon">📅</div>
+    <h2 class="sec-title">Тижневі ритуали</h2>
+    <div class="sec-line"></div>
+  </div>
+
+  <table class="proto-table">
+    <tr><th>Засіб</th><th>Коли</th><th>Деталі</th><th></th></tr>
+    <tr><td><div class="item-name">Маска Vivant BR</div></td><td>Вт / Чт / Сб ввечері</td><td>Т-зона: маска + ½ ч.л. соди; щоки: без соди</td><td></td></tr>
+    <tr><td><div class="item-name">SOLV X + Нізорал + Kelual DS</div></td><td>Пн / Пт ввечері</td><td>Замінює вмивання: Solv X → Нізорал (1 год) → Kelual DS</td><td></td></tr>
+    <tr><td><div class="item-name">LED акне-протокол 30 хв</div></td><td>Субота</td><td>1 раз на 7–14 днів під час лікування</td><td></td></tr>
+    <tr><td><div class="item-name">Keratoline + Eucerin Urea 10%</div></td><td>Щодня (душ)</td><td>Тіло</td><td></td></tr>
+  </table>
+
+</div>
+
+<!-- ═══ TAB 2: ПРОЦЕДУРИ ═══ -->
+<div class="tab-panel" id="tab-procedures">
+
+  <div class="sec-head">
+    <div class="sec-icon">💉</div>
+    <h2 class="sec-title">Рекомендовані процедури — постакне</h2>
+    <div class="sec-line"></div>
+  </div>
+
+  <div class="proc-grid">
+    <div class="proc-card">
+      <div class="proc-card-name">Endymed Intensif + Екзосоми Exohoe</div>
+      <div class="proc-meta">
+        <strong>Кількість сеансів:</strong> 2<br>
+        <strong>Інтервал:</strong> 4 тижні між сеансами<br>
+        <strong>Між процедурами:</strong> мінімум 5 днів<br>
+        <strong>Примітка:</strong> можливе тимчасове загострення висипань
+      </div>
+      <span class="proc-tag">Постакне</span>
+    </div>
+
+    <div class="proc-card">
+      <div class="proc-card-name">Dermadrop Proderm + LED лампа 20 хв</div>
+      <div class="proc-meta">
+        <strong>Кількість сеансів:</strong> 5<br>
+        <strong>Інтервал:</strong> 7 днів між сеансами<br>
+        <strong>Можна поєднувати:</strong> з Nordlys постакне
+      </div>
+      <span class="proc-tag">Постакне</span>
+    </div>
+
+    <div class="proc-card">
+      <div class="proc-card-name">Nordlys — лікування постакне</div>
+      <div class="proc-meta">
+        <strong>Кількість сеансів:</strong> 3–4<br>
+        <strong>Інтервал:</strong> 2 тижні між сеансами<br>
+        <strong>Можна поєднувати:</strong> з Dermadrop + LED
+      </div>
+      <span class="proc-tag">Лазер</span>
+    </div>
+  </div>
+
+  <div class="sec-head" style="margin-top:24px">
+    <div class="sec-icon">⚠</div>
+    <h2 class="sec-title">After-care після Endymed Intensif</h2>
+    <div class="sec-line"></div>
+  </div>
+
+  <div class="aftercare-box">
+    <strong>Дні 1–7 після процедури</strong>
+    Не вмивати обличчя водою 5–7 днів після процедури.<br>
+    <br>
+    1. Протирати обличчя розчином хлоргексидину — ранок і вечір<br>
+    2. K-crema Histolab — крем для обличчя ранок і вечір<br>
+    3. Сонцезахист — поновлювати кожні 2 години
+  </div>
+
+  <div class="aftercare-box" style="margin-top:10px;border-left-color:var(--green);background:var(--green-pale)">
+    <strong style="color:var(--green)">При загостренні висипань після Endymed</strong>
+    Тирозур гель — 2 рази на день — 7 днів, потім відмінити
+  </div>
+
+  <div class="sec-head" style="margin-top:24px">
+    <div class="sec-icon">📋</div>
+    <h2 class="sec-title">Повторний огляд</h2>
+    <div class="sec-line"></div>
+  </div>
+
+  <table class="proto-table">
+    <tr><th>Подія</th><th>Коли</th><th>Лікар</th><th>Примітка</th></tr>
+    <tr><td><div class="item-name">Повторний огляд після 2-х процедур Endymed</div></td><td>Через ~8 тижнів</td><td>Швед Юлія</td><td>Для продовження плану і призначення нових процедур</td></tr>
+    <tr><td><div class="item-name">Повторний огляд — трихологія</div></td><td>Через 3 місяці</td><td>Марадь С.Л.</td><td>21.06.2025</td></tr>
+  </table>
+
+</div>
+
+<!-- ═══ TAB 3: ТРЕКЕР ═══ -->
+<div class="tab-panel" id="tab-tracker">
+
+  <!-- Adherence chart -->
+  <div class="chart-wrap">
+    <div class="chart-title">Adherence по тижнях</div>
+    <div class="chart-bars" id="chartBars">
+      <div class="chart-baseline"></div>
+    </div>
+  </div>
+
+  <!-- Weeks -->
+  <div id="trackerWeeks"></div>
+
+</div>
+</div>
+
+<script>
+// ── DATA ─────────────────────────────────────────────────────────────────────
+const START = new Date(2026,4,10); // May 10
+const END   = new Date(2026,5,9);  // Jun 9
+
+const MORNING_TASKS = [
+  {id:'opt', label:'Optibac', grp:'💊 Нутр.'},
+  {id:'cen', label:'Cenitol', grp:'💊 Нутр.'},
+  {id:'met', label:'Meta I 3C', grp:'💊 Нутр.'},
+  {id:'epa', label:'EPA DHA', grp:'💊 Нутр.'},
+  {id:'lai', label:'Lait SR ×2', grp:'✨ Догляд'},
+  {id:'p50', label:'P50 V BR', grp:'✨ Догляд'},
+  {id:'der', label:'Dermo + SPF', grp:'✨ Догляд'},
+  {id:'ker', label:'Тіло: Keratoline', grp:'✨ Догляд'},
+];
+
+const EVENING_TASKS = [
+  {id:'glu', label:'Glutagenics', grp:'💊 Нутр.'},
+  {id:'lai2', label:'Lait SR ×2', grp:'🌙 Вечір'},
+  {id:'ser', label:'Serum Tiss.', grp:'🌙 Вечір'},
+  {id:'der2', label:'Dermopurifiant', grp:'🌙 Вечір'},
+];
+
+// Weekly specials: [dayOfWeek (0=Mon), ...] → id, label
+// Mon=0, Tue=1, Wed=2, Thu=3, Fri=4, Sat=5, Sun=6
+const SPECIALS = {
+  1: [{id:'msk', label:'Маска Vivant'}],           // Tue
+  3: [{id:'msk2', label:'Маска Vivant'}],           // Thu
+  5: [{id:'msk3', label:'Маска Vivant'},{id:'led', label:'LED 30хв'}], // Sat
+  0: [{id:'solv', label:'SOLV X ритуал'}],          // Mon (replaces eve wash)
+  4: [{id:'solv2', label:'SOLV X ритуал'}],         // Fri
+};
+
+const DAYS_UK = ['Пн','Вт','Ср','Чт','Пт','Сб','Нд'];
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let state = JSON.parse(localStorage.getItem('revive_tracker') || '{}');
+
+function save(){ localStorage.setItem('revive_tracker', JSON.stringify(state)); }
+
+function getKey(date, taskId){
+  return `${date.toISOString().slice(0,10)}_${taskId}`;
+}
+
+function isChecked(date, taskId){
+  return !!state[getKey(date,taskId)];
+}
+
+function toggle(date, taskId){
+  const k = getKey(date,taskId);
+  state[k] = !state[k];
+  save();
+  renderProgress();
+  renderChart();
+}
+
+// ── DATE UTILS ────────────────────────────────────────────────────────────────
+function getDaysBetween(a,b){
+  const days = [];
+  let d = new Date(a);
+  while(d <= b){ days.push(new Date(d)); d.setDate(d.getDate()+1); }
+  return days;
+}
+
+function getWeeks(){
+  const allDays = getDaysBetween(START, END);
+  const weeks = [];
+  let wk = [];
+  // start from first day, group by week Mon-Sun
+  // Find Monday of START week
+  const firstMon = new Date(START);
+  const dow = (START.getDay() + 6) % 7; // 0=Mon
+  firstMon.setDate(START.getDate() - dow);
+  
+  let cur = new Date(firstMon);
+  while(cur <= END){
+    const wkDays = [];
+    for(let i=0;i<7;i++){
+      const d = new Date(cur);
+      d.setDate(cur.getDate()+i);
+      if(d >= START && d <= END) wkDays.push(d);
+      else wkDays.push(null);
+    }
+    weeks.push(wkDays);
+    cur.setDate(cur.getDate()+7);
+  }
+  return weeks;
+}
+
+function getDayTasks(date){
+  const dow = (date.getDay() + 6) % 7; // 0=Mon
+  const tasks = [];
+  MORNING_TASKS.forEach(t => tasks.push({...t, time:'morning'}));
+  
+  // Special evening for Mon/Fri (SOLV X replaces evening wash)
+  const isSpecialEve = dow===0 || dow===4;
+  if(isSpecialEve){
+    tasks.push({id:'glu', label:'Glutagenics', grp:'💊 Нутр.', time:'evening'});
+    tasks.push({id:'solv_eve', label:'SOLV X+Нізорал+Kelual', grp:'🌙 Вечір', time:'evening'});
+  } else {
+    EVENING_TASKS.forEach(t => tasks.push({...t, time:'evening'}));
+  }
+  
+  // Weekly specials
+  const specials = SPECIALS[dow] || [];
+  specials.forEach(t => tasks.push({...t, time:'special'}));
+  
+  return tasks;
+}
+
+function countDayDone(date){
+  const tasks = getDayTasks(date);
+  const done = tasks.filter(t => isChecked(date, t.id)).length;
+  return {done, total:tasks.length};
+}
+
+function getWeekScore(weekDays){
+  let done=0, total=0;
+  weekDays.forEach(d => {
+    if(!d) return;
+    const c = countDayDone(d);
+    done += c.done;
+    total += c.total;
+  });
+  return total > 0 ? done/total : 0;
+}
+
+// ── RENDER PROGRESS ───────────────────────────────────────────────────────────
+function renderProgress(){
+  const allDays = getDaysBetween(START, END);
+  let done=0, total=0;
+  allDays.forEach(d => {
+    const c = countDayDone(d);
+    done += c.done;
+    total += c.total;
+  });
+  const pct = total > 0 ? Math.round(done/total*100) : 0;
+  document.getElementById('totalProgress').style.width = pct+'%';
+  document.getElementById('totalPct').textContent = pct+'%';
+}
+
+// ── RENDER CHART ──────────────────────────────────────────────────────────────
+function renderChart(){
+  const weeks = getWeeks();
+  const container = document.getElementById('chartBars');
+  container.innerHTML = '<div class="chart-baseline"></div>';
+  
+  weeks.forEach((wk, wi) => {
+    const score = getWeekScore(wk);
+    const pct = Math.round(score*100);
+    const h = Math.max(2, score*60);
+    
+    const wrap = document.createElement('div');
+    wrap.className = 'chart-bar-wrap';
+    
+    const pctEl = document.createElement('div');
+    pctEl.className = 'chart-pct';
+    pctEl.textContent = pct ? pct+'%' : '';
+    
+    const bar = document.createElement('div');
+    bar.className = 'chart-bar' + (pct > 0 ? ' filled' : '');
+    bar.style.height = h+'px';
+    
+    const lbl = document.createElement('div');
+    lbl.className = 'chart-bar-label';
+    lbl.textContent = `Тиж ${wi+1}`;
+    bar.appendChild(lbl);
+    
+    wrap.appendChild(pctEl);
+    wrap.appendChild(bar);
+    container.appendChild(wrap);
+  });
+}
+
+// ── RENDER TRACKER ────────────────────────────────────────────────────────────
+function renderTracker(){
+  const weeks = getWeeks();
+  const container = document.getElementById('trackerWeeks');
+  container.innerHTML = '';
+  
+  weeks.forEach((weekDays, wi) => {
+    // Find first/last real day
+    const realDays = weekDays.filter(Boolean);
+    if(!realDays.length) return;
+    
+    const first = realDays[0];
+    const last = realDays[realDays.length-1];
+    const fmt = d => `${d.getDate().toString().padStart(2,'0')}.${(d.getMonth()+1).toString().padStart(2,'0')}`;
+    
+    const block = document.createElement('div');
+    block.className = 'week-block';
+    block.id = `week-${wi+1}`;
+    
+    // Header
+    const score = getWeekScore(weekDays);
+    const pct = Math.round(score*100);
+    block.innerHTML = `
+      <div class="week-header">
+        <span class="week-title">Тиждень ${wi+1} · ${fmt(first)} – ${fmt(last)}.2026</span>
+        <span class="week-score">${pct > 0 ? pct+'%' : '—'}</span>
+      </div>`;
+    
+    // Days grid
+    const grid = document.createElement('div');
+    grid.className = 'week-days';
+    
+    weekDays.forEach((date, di) => {
+      const col = document.createElement('div');
+      col.className = 'day-col';
+      
+      const isWknd = di >= 5;
+      const dayName = document.createElement('div');
+      dayName.className = 'day-name' + (isWknd ? ' weekend' : '');
+      dayName.textContent = date ? `${DAYS_UK[di]} ${date.getDate()}` : DAYS_UK[di];
+      col.appendChild(dayName);
+      
+      if(!date){ col.style.opacity='0.3'; grid.appendChild(col); return; }
+      
+      const tasksDiv = document.createElement('div');
+      tasksDiv.className = 'day-tasks';
+      
+      const tasks = getDayTasks(date);
+      let lastGrp = '';
+      
+      tasks.forEach(task => {
+        if(task.grp !== lastGrp){
+          const div = document.createElement('div');
+          div.className = 'section-divider';
+          div.textContent = task.grp;
+          tasksDiv.appendChild(div);
+          lastGrp = task.grp;
+        }
+        
+        const checked = isChecked(date, task.id);
+        const row = document.createElement('div');
+        row.className = 'task-row' + (checked ? ' done' : '');
+        row.innerHTML = `
+          <div class="task-cb ${checked?'checked':''}"></div>
+          <span class="task-text">${task.label}</span>`;
+        
+        row.addEventListener('click', () => {
+          toggle(date, task.id);
+          // Update this row
+          const cb = row.querySelector('.task-cb');
+          const now = isChecked(date, task.id);
+          cb.classList.toggle('checked', now);
+          row.classList.toggle('done', now);
+          // Update week score
+          const newScore = getWeekScore(weekDays);
+          block.querySelector('.week-score').textContent = 
+            Math.round(newScore*100) > 0 ? Math.round(newScore*100)+'%' : '—';
+        });
+        
+        tasksDiv.appendChild(row);
+      });
+      
+      col.appendChild(tasksDiv);
+      grid.appendChild(col);
+    });
+    
+    block.appendChild(grid);
+    
+    // Notes
+    const notesDiv = document.createElement('div');
+    notesDiv.className = 'week-notes';
+    const ta = document.createElement('textarea');
+    ta.placeholder = 'Нотатки до тижня...';
+    ta.value = state[`notes_week_${wi+1}`] || '';
+    ta.addEventListener('input', () => {
+      state[`notes_week_${wi+1}`] = ta.value;
+      save();
+    });
+    notesDiv.appendChild(ta);
+    block.appendChild(notesDiv);
+    
+    container.appendChild(block);
+  });
+}
+
+// ── TABS ──────────────────────────────────────────────────────────────────────
+function switchTab(id, btn){
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-'+id).classList.add('active');
+  if(id==='tracker'){ renderChart(); }
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+renderTracker();
+renderProgress();
+renderChart();
+</script>
+</body>
+</html>

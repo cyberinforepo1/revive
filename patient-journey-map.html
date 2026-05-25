@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Patient Journey Map — Care Assistant</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0e0f0c;
+  --surface:#141510;
+  --surface2:#1a1c16;
+  --border:rgba(255,255,255,.07);
+  --border2:rgba(255,255,255,.12);
+  --ink:#f5f2ec;
+  --muted:rgba(245,242,236,.45);
+  --dim:rgba(245,242,236,.2);
+  --green:#3d7a52;
+  --green-bright:#5aaa70;
+  --green-pale:rgba(61,122,82,.15);
+  --green-mid:#c5dbc9;
+  --gold:#b8975a;
+  --gold-pale:rgba(184,151,90,.12);
+  --amber:#d4913a;
+  --red:#c05050;
+  --red-pale:rgba(192,80,80,.12);
+  --blue:#4a7eb5;
+  --blue-pale:rgba(74,126,181,.12);
+  --purple:#8a6ab5;
+  --purple-pale:rgba(138,106,181,.12);
+
+  /* ROLES */
+  --patient:#5aaa70;
+  --admin:#b8975a;
+  --doctor:#4a7eb5;
+  --owner:#8a6ab5;
+  --system:rgba(255,255,255,.55);
+}
+
+html{scroll-behavior:smooth}
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.6;min-height:100vh}
+
+/* NOISE */
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.035'/%3E%3C/svg%3E");pointer-events:none;z-index:0;opacity:.5}
+
+/* NAV */
+.nav{position:fixed;top:0;left:0;right:0;z-index:100;height:52px;background:rgba(14,15,12,.9);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 40px}
+.nav-logo{font-family:'Cormorant Garamond',serif;font-size:15px;color:var(--muted);letter-spacing:.06em}
+.nav-logo span{color:var(--green-bright)}
+.nav-legend{display:flex;gap:20px;align-items:center}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--dim);letter-spacing:.04em}
+.legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+/* HEADER */
+.header{padding:100px 60px 60px;position:relative;z-index:1;max-width:1200px;margin:0 auto}
+.header-tag{font-size:11px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--green-bright);margin-bottom:20px;opacity:.8}
+.header-title{font-family:'Cormorant Garamond',serif;font-size:clamp(36px,5vw,62px);font-weight:300;color:var(--ink);line-height:1.1;margin-bottom:16px}
+.header-title em{font-style:italic;color:var(--green-bright)}
+.header-sub{font-size:15px;font-weight:300;color:var(--muted);max-width:560px;line-height:1.65}
+.header-meta{display:flex;gap:32px;margin-top:32px;flex-wrap:wrap}
+.hm-item{display:flex;flex-direction:column;gap:3px}
+.hm-label{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+.hm-val{font-size:13px;font-weight:500;color:var(--muted)}
+
+/* ROLE LEGEND FULL */
+.roles-bar{max-width:1200px;margin:0 auto 48px;padding:0 60px;position:relative;z-index:1}
+.roles-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:2px}
+.role-card{padding:16px 20px;border:1px solid var(--border)}
+.role-card.patient{border-color:rgba(90,170,112,.25);background:rgba(90,170,112,.05)}
+.role-card.admin{border-color:rgba(184,151,90,.25);background:rgba(184,151,90,.05)}
+.role-card.doctor{border-color:rgba(74,126,181,.25);background:rgba(74,126,181,.05)}
+.role-card.owner{border-color:rgba(138,106,181,.25);background:rgba(138,106,181,.05)}
+.role-dot{width:10px;height:10px;border-radius:50%;margin-bottom:10px}
+.role-name{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px}
+.role-card.patient .role-name{color:var(--patient)}
+.role-card.admin .role-name{color:var(--admin)}
+.role-card.doctor .role-name{color:var(--doctor)}
+.role-card.owner .role-name{color:var(--owner)}
+.role-desc{font-size:11px;color:var(--dim);line-height:1.5}
+
+/* PHASES */
+.phases{max-width:1200px;margin:0 auto;padding:0 60px 80px;position:relative;z-index:1}
+
+/* PHASE BLOCK */
+.phase{margin-bottom:4px}
+.phase-header{display:grid;grid-template-columns:140px 1fr;gap:0;cursor:pointer}
+.phase-time{background:var(--surface);border:1px solid var(--border);border-right:none;padding:20px 16px;display:flex;flex-direction:column;gap:4px;justify-content:center}
+.phase-time-label{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+.phase-time-val{font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:400;color:var(--green-bright)}
+.phase-title-block{border:1px solid var(--border);padding:20px 24px;display:flex;align-items:center;justify-content:space-between;background:var(--surface)}
+.phase-title-block:hover{background:var(--surface2)}
+.phase-name{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:400;color:var(--ink)}
+.phase-name em{font-style:italic;color:var(--green-bright)}
+.phase-toggle{font-size:18px;color:var(--dim);transition:transform .3s}
+.phase.open .phase-toggle{transform:rotate(45deg)}
+
+/* PHASE CONTENT */
+.phase-content{display:none;border:1px solid var(--border);border-top:none;background:var(--surface2)}
+.phase.open .phase-content{display:block}
+
+/* LANE TABLE */
+.lane-table{display:grid;grid-template-columns:140px 1fr 1fr 1fr 1fr;border-bottom:1px solid var(--border)}
+
+.lane-header{display:grid;grid-template-columns:140px 1fr 1fr 1fr 1fr;background:rgba(255,255,255,.02);border-bottom:1px solid var(--border)}
+.lh-cell{padding:10px 14px;font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;border-right:1px solid var(--border)}
+.lh-cell:last-child{border-right:none}
+.lh-cell.patient{color:var(--patient)}
+.lh-cell.admin{color:var(--admin)}
+.lh-cell.doctor{color:var(--doctor)}
+.lh-cell.owner{color:var(--owner)}
+.lh-cell.system{color:var(--system)}
+
+.lane-row{display:grid;grid-template-columns:140px 1fr 1fr 1fr 1fr;border-bottom:1px solid var(--border)}
+.lane-row:last-child{border-bottom:none}
+
+.lr-moment{padding:14px 16px;border-right:1px solid var(--border);display:flex;align-items:center}
+.moment-label{font-size:11px;color:var(--dim);line-height:1.4}
+
+.lr-cell{padding:12px 14px;border-right:1px solid var(--border);font-size:12px;line-height:1.5;vertical-align:top}
+.lr-cell:last-child{border-right:none}
+.lr-cell.empty{background:rgba(255,255,255,.01)}
+
+/* ACTION TYPES */
+.action{display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
+.action:last-child{margin-bottom:0}
+.action-text{font-size:12px;line-height:1.5}
+.action-tag{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:2px;width:fit-content;margin-top:3px}
+.action-tag.auto{background:rgba(90,170,112,.2);color:var(--green-bright)}
+.action-tag.human{background:rgba(184,151,90,.2);color:var(--admin)}
+.action-tag.rules{background:rgba(74,126,181,.2);color:var(--doctor)}
+.action-tag.escalate{background:rgba(192,80,80,.2);color:var(--red)}
+.action-tag.future{background:rgba(138,106,181,.2);color:var(--purple)}
+
+/* KEY MOMENT */
+.key-moment{background:rgba(90,170,112,.06);border-left:3px solid var(--green-bright);margin:16px;padding:14px 18px}
+.km-label{font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--green-bright);margin-bottom:6px}
+.km-text{font-size:13px;color:var(--muted);line-height:1.6}
+
+/* NOT AUTOMATED */
+.not-auto-block{background:rgba(192,80,80,.05);border:1px solid rgba(192,80,80,.15);margin:20px;padding:20px 24px}
+.not-auto-title{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--red);margin-bottom:14px}
+.not-auto-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.not-auto-item{font-size:12px;color:var(--muted);display:flex;gap:8px;line-height:1.5}
+.not-auto-item::before{content:'✗';color:var(--red);flex-shrink:0;font-weight:700}
+
+/* SUMMARY */
+.summary{max-width:1200px;margin:0 auto;padding:0 60px 80px;position:relative;z-index:1}
+.summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;margin-bottom:24px}
+.summary-cell{padding:24px 20px;border:1px solid var(--border);text-align:center}
+.summary-num{font-family:'Cormorant Garamond',serif;font-size:40px;font-weight:300;line-height:1;margin-bottom:6px}
+.summary-num.gr{color:var(--green-bright)}
+.summary-num.gd{color:var(--gold)}
+.summary-num.rd{color:var(--red)}
+.summary-num.bl{color:var(--blue)}
+.summary-label{font-size:10px;color:var(--dim);letter-spacing:.08em;text-transform:uppercase;line-height:1.4}
+
+.rules-sources{background:var(--surface);border:1px solid var(--border);padding:28px 32px;margin-bottom:24px}
+.rs-title{font-size:11px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:20px}
+.rs-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.rs-item{padding:16px;border:1px solid var(--border);background:var(--surface2)}
+.rs-level{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--green-bright);margin-bottom:8px}
+.rs-name{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:6px}
+.rs-desc{font-size:11px;color:var(--dim);line-height:1.5}
+
+.closing{text-align:center;padding:60px;border-top:1px solid var(--border);position:relative;z-index:1}
+.closing-q{font-family:'Cormorant Garamond',serif;font-size:clamp(20px,3vw,36px);font-weight:300;color:var(--ink);line-height:1.3;max-width:580px;margin:0 auto 14px}
+.closing-q em{font-style:italic;color:var(--green-bright)}
+.closing-sub{font-size:12px;color:var(--dim)}
+
+@media(max-width:900px){
+  .nav-legend{display:none}
+  .header,.roles-bar,.phases,.summary{padding-left:24px;padding-right:24px}
+  .header{padding-top:80px}
+  .roles-grid,.summary-grid,.rs-grid,.not-auto-grid{grid-template-columns:1fr 1fr}
+  .lane-header,.lane-row,.lane-table{grid-template-columns:100px 1fr 1fr}
+  .lh-cell:nth-child(4),.lh-cell:nth-child(5),.lr-cell:nth-child(4),.lr-cell:nth-child(5){display:none}
+  .phase-header{grid-template-columns:100px 1fr}
+  .lr-moment{padding:10px 12px}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-logo">Care <span>Assistant</span> · Patient Journey</div>
+  <div class="nav-legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--patient)"></div>Пацієнт</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--admin)"></div>Адмін</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--doctor)"></div>Лікар</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--owner)"></div>Власник</div>
+    <div class="legend-item"><div class="legend-dot" style="background:rgba(255,255,255,.4)"></div>Система</div>
+  </div>
+</nav>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-tag">Care Assistant · Операційна система patient journey</div>
+  <h1 class="header-title">Від першого повідомлення<br>до <em>6 місяців після</em> процедури</h1>
+  <p class="header-sub">Повний маршрут пацієнта: хто що робить, де система бере на себе рутину, де людина незамінна — і де продукт дає найбільшу унікальну цінність.</p>
+  <div class="header-meta">
+    <div class="hm-item"><div class="hm-label">Фаз</div><div class="hm-val">6 фаз journey</div></div>
+    <div class="hm-item"><div class="hm-label">Ролей</div><div class="hm-val">4 ролі в системі</div></div>
+    <div class="hm-item"><div class="hm-label">Автоматизація</div><div class="hm-val">~65% рутини</div></div>
+    <div class="hm-item"><div class="hm-label">Контекст</div><div class="hm-val">Revive Clinic, Львів</div></div>
+  </div>
+</div>
+
+<!-- ROLE CARDS -->
+<div class="roles-bar">
+  <div class="roles-grid">
+    <div class="role-card patient">
+      <div class="role-dot" style="background:var(--patient)"></div>
+      <div class="role-name">Пацієнт</div>
+      <div class="role-desc">Telegram + Patient Portal. Бачить свій план, трекер, аналізи, прогрес фото.</div>
+    </div>
+    <div class="role-card admin">
+      <div class="role-dot" style="background:var(--admin)"></div>
+      <div class="role-name">Адміністратор</div>
+      <div class="role-desc">Action Inbox, записи, комунікація, продажі засобів, сервіс і гостинність.</div>
+    </div>
+    <div class="role-card doctor">
+      <div class="role-dot" style="background:var(--doctor)"></div>
+      <div class="role-name">Лікар</div>
+      <div class="role-desc">Approval flow, картки пацієнтів, adherence між візитами, фото загоєння.</div>
+    </div>
+    <div class="role-card owner">
+      <div class="role-dot" style="background:var(--owner)"></div>
+      <div class="role-name">Власник</div>
+      <div class="role-desc">Дашборд: no-show, LTV, завантаженість лікарів, виручка, час адмінів.</div>
+    </div>
+  </div>
+</div>
+
+<!-- PHASES -->
+<div class="phases">
+
+  <!-- ══ ФАЗА 1 ══ -->
+  <div class="phase open" id="p1">
+    <div class="phase-header" onclick="togglePhase('p1')">
+      <div class="phase-time"><div class="phase-time-label">Момент</div><div class="phase-time-val">День 0</div></div>
+      <div class="phase-title-block">
+        <div class="phase-name">Перший контакт — <em>до запису</em></div>
+        <span class="phase-toggle">+</span>
+      </div>
+    </div>
+    <div class="phase-content">
+      <div class="lane-header">
+        <div class="lh-cell"></div>
+        <div class="lh-cell patient">Пацієнт</div>
+        <div class="lh-cell admin">Адміністратор</div>
+        <div class="lh-cell doctor">Лікар</div>
+        <div class="lh-cell owner">Власник</div>
+      </div>
+
+      <div class="lane-row">
+        <div class="lr-moment"><div class="moment-label">Перше повідомлення</div></div>
+        <div class="lr-cell">
+          <div class="action">
+            <div class="action-text">Пише в Telegram, Viber або Instagram: «Скільки коштує чистка?», «Є місця на суботу?», «У мене акне, до кого мені?»</div>
+          </div>
+        </div>
+        <div class="lr-cell">
+          <div class="action">
+            <div class="action-text">Зараз: відповідає вручну з кожного каналу окремо</div>
+            <span class="action-tag human">Зараз — людина</span>
+          </div>
+          <div class="action">
+            <div class="action-text">З системою: бачить всі канали в одному Action Inbox</div>
+            <span class="action-tag auto">Після — система</span>
+          </div>
+        </div>
+        <div class="lr-cell empty"></div>
+        <div class="lr-cell empty"></div>
+      </div>
+
+      <div class="lane-row">
+        <div class="lr-moment"><div class="moment-label">FAQ і тріаж</div></div>
+        <div class="lr-cell">
+          <div class="action"><div class="action-text">Чекає відповіді. Якщо довго — пише конкурентам.</div></div>
+        </div>
+        <div class="lr-cell">
+          <div class="action">
+            <div class="action-text">Бот відповідає на типові питання миттєво 24/7. Ціни, адреса, підготовка, перелік лікарів.</div>
+            <span class="action-tag auto">Автоматично · 75–80%</span>
+          </div>
+          <div class="action">
+            <div class="action-text">Нестандартне (фото висипу, голосове) → Action Inbox з контекстом</div>
+            <span class="action-tag escalate">Ескалація</span>
+          </div>
+        </div>
+        <div class="lr-cell">
+          <div class="action"><div class="action-text">Якщо тріаж складний — лікар отримує запит і відповідає через систему, не в особистому телефоні</div><span class="action-tag rules">Approval flow</span></div>
+        </div>
+        <div class="lr-cell empty"></div>
+      </div>
+
+      <div class="key-moment">
+        <div class="km-label">Ключовий момент</div>
+        <div class="km-text">Час відповіді на перше повідомлення — критичний. Якщо пацієнт чекає більше 15 хвилин — він пише конкурентам. Бот відповідає миттєво в будь-який час. <strong>Це прямо впливає на конверсію нових пацієнтів.</strong></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ ФАЗА 2 ══ -->
+  <div class="phase open" id="p2">
+    <div class="phase-header" onclick="togglePhase('p2')">
+      <div class="phase-time"><div class="phase-time-label">Часовий рамок</div><div class="phase-time-val">День 0–7</div></div>
+      <div class="phase-title-block">
+        <div class="phase-name">Запис і підготовка — <em>до процедури</em></div>
+        <span class="phase-toggle">+</span>
+      </div>
+    </div>
+    <div class="phase-content">
+      <div class="lane-header">
+        <div class="lh-cell"></div>
+        <div class="lh-cell patient">Пацієнт</div>
+        <div class="lh-cell admin">Адміністратор</div>
+        <div class="lh-cell doctor">Лікар</div>
+        <div class="lh-cell owner">Власник</div>
+      </div>
+
+      <div class="lane-row">
+        <div class="lr-moment"><div class="moment-label">Запис</div></div>
+        <div class="lr-cell"><div class="action"><div class="action-text">Вибирає зручний слот з доступних варіантів прямо в Telegram. Підтверджує одним кліком.</div><span class="action-tag auto">Самостійно · бот</span></div></div>
+        <div class="lr-cell"><div class="action"><div class="action-text">Rules Engine перевіряє: протипоказання, сумісність, інтервали. CRM оновлюється автоматично.</div><span class="action-tag auto">Автоматично · 90%</span></div></div>
+        <div class="lr-cell"><div class="action"><div class="action-text">Нетипові запити (засмага, нові ліки) → approval одним кліком</div><span class="action-tag rules">Rules Engine</span></div></div>
+        <div class="lr-cell"><div class="action"><div class="action-text">Бачить нові записи в дашборді в реальному часі</div></div></div>
+      </div>
+
+      <div class="lane-row">
+        <div class="lr-moment"><div class="moment-label">Анкета і згода</div></div>
+        <div class="lr-cell"><div class="action"><div class="action-text">Заповнює анкету (алергії, ліки, хвороби) і підписує згоду до прийому — у зручний час зі смартфона</div><span class="action-tag auto">До візиту · 85%</span></div></div>
+        <div class="lr-cell"><div class="action"><div class="action-text">Дані автоматично в системі. Не треба питати знову при прийомі.</div><span class="action-tag auto">Автоматично</span></div></div>
+        <div class="lr-cell"><div class="action"><div class="action-text">Бачить анкету і згоду до прийому. Фокусується на лікуванні, не на паперах.</div></div></div>
+        <div class="lr-cell empty"></div>
+      </div>
+
+      <div class="lane-row">
+        <div class="lr-moment"><div class="moment-label">Підготовка</div></div>
+        <div class="lr-cell"><div class="action"><div class="action-text">За 7 днів: загальні інструкції. За 1 день: конкретна підготовка до цієї процедури. Вранці: фінальне нагадування з адресою і часом.</div><span class="action-tag auto">Автоматично · 100%</span></div></div>
+        <div class="lr-cell"><div class="action"><div class="action-text">Нічого не треба робити вручну. Система надсилає правильні інструкції під правильну процедуру.</div><span class="action-tag auto">Автоматично</span></div></div>
+        <div class="lr-cell empty"></div>
+        <div class="lr-cell empty"></div>
+      </div>
+
+      <div class="lane-row">
+        <div class="lr-moment"><div class="moment-label">Підтвердження</div></div>
+        <div class="lr-cell"><div class="action"><div class="action-text">Отримує нагадування за 7д / 2д / 1д / 1год. Підтверджує кнопкою або переносить самостійно.</div></div></div>
+        <div class="lr-cell"><div class="action"><div class="action-text">Не підтвердив після 1-год нагадування → Action Inbox. Хронічний ризик no-show → позначка ризику в розкладі.</div><span class="action-tag escalate">Ескалація · 95%</span></div></div>
+        <div class="lr-cell empty"></div>
+        <div class="lr-cell"><div class="action"><div class="action-text">Бачить ризики no-show заздалегідь. Може прийняти рішення про передоплату.</div></div></div>
+      </div>
+
+      <div class="key-moment">
+        <div class="km-label">Ключовий момент — що не автоматизується</div>
+        <div class="km-text">Якщо пацієнт пише голосове, надсилає незрозуміле фото або питає щось що виходить за межі FAQ — це завжди до адміна. <strong>Система передає з повним контекстом, не з нуля.</strong></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ ФАЗА 3 ══ -->
+  <div class="phase open" id="p3">
+    <div class="phase-header" onclick="togglePhase('p3')">
+      <div class="phase-time"><div class="phase-time-label">Момент</div><div class="phase-time-val">День Х</div></div>
+      <div class="phase-title-block">
+        <div class="phase-name">День процедури — <em>у клініці</em></div>
+        <span class="phase-toggle">+</span>
+      </div>
+    </div>
+    <div class="phase-content">
+      <div class="lane-header">
+        <div class="lh-cell"></div>
+        <div class="lh-cell patient">Пацієнт</div>
+        <div class="lh-cell admin">Адміністратор</div>
+        <div class="lh-cell doctor">Лікар</div>
+        <div class="lh-cell owner">Власник</div>
+      </div>
+
+      <div class="lane-row">
+        <div class="lr-moment"><div class="moment-label">Прийом</div></div>
+        <div class="lr-cell"><div class="action"><div class="action-text">Приходить підготовленим. Анкета вже заповнена, згода підписана. Не треба нічого заповнювати на рецепції.</div></div></div>
+        <div class="lr-cell">
+          <div class="action"><div class="action-text">Зустрічає, пропонує чай/каву, провожає до кабінету.</div><span class="action-tag human">Завжди людина</span></div>
+          <div class="action"><div class="action-text">Процедура: checklist кабінету вже виконано (система нагадала за 15 хв)</div><span class="action-tag auto">Чеклист — авто</span></div>
+        </div>
+        <div class="lr-cell"><div class="action"><div class="action-text">Бачить анкету, всю попередню історію і adherence попереднього лікування до прийому. Не запитує з нуля.</div></div></div>
+        <div class="lr-cell empty"></div>
+      </div>
+
+      <div class="lane-row">
+        <div class="lr-moment"><div class="moment-label">Після прийому</div></div>
+        <div class="lr-cell"><div class="action"><div class="action-text">Миттєво отримує структурований план лікування в Telegram + ICS на весь курс + список що купити.</div><span class="action-tag auto">Миттєво · AI</span></div></div>
+        <div class="lr-cell"><div class="action"><div class="action-text">Оплата: готівка або термінал.</div><span class="action-tag human">Завжди людина</span></div><div class="action"><div class="action-text">Продаж засобів: пояснює, пакує.</div><span class="action-tag human">Людина + бот допомагає</span></div></div>
+        <div class="lr-cell"><div class="action"><div class="action-text">Вводить план лікування (текст або фото). AI парсить і структурує. Лікар підтверджує одним кліком.</div><span class="action-tag auto">AI · 2 хвилини</span></div></div>
+        <div class="lr-cell empty"></div>
+      </div>
+
+      <div class="key-moment">
+        <div class="km-label">Ключовий момент — момент максимальної мотивації</div>
+        <div class="km-text">Пацієнт виходить з кабінету — і прямо зараз його мотивація максимальна. Через годину він вже думає про інше. <strong>Система надсилає план поки він ще в коридорі клініки.</strong> Не завтра, не «ми вам вишлемо». Зараз.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ ФАЗА 4 ══ -->
+  <div class="phase open" id="p4">
+    <div class="phase-header" onclick="togglePhase('p4')">
+      <div class="phase-time"><div class="phase-time-label">Часовий рамок</div><div class="phase-time-val">Дні 1–30</div></div>
+      <div class="phase-title-block">
+        <div class="phase-name">Домашнє лікування — <em>щодня між візитами</em></div>
+        <span class="phase-toggle">+</span>
+      </div>
+    </div>
+    <div class="phase-content">
+      <div class="lane-header">
+        <div class="lh-cell"></div>
+        <div class="lh-cell patient">Пацієнт</div>
+        <div class="lh-cell admin">Адміністратор</div>
+        <div class="lh-cell doctor">Лікар</div>
+        <div class="lh-cell owner">Власник</div>
+      </div>
+
+      <div class="lane-row">
+        <div class="lr-moment"><div class="moment-label">Щодня</div></div>
+        <div class="lr-cell"><div class="action"><div class="action-text">Отримує ранкове і вечірнє нагадування за своїм протоколом. Відмічає виконання кнопкою. Пн і Пт — SOLV X замість вмивання. Суб — маска і LED.</div><span class="action-tag auto">Щодня · автоматично</span></div></div>
+        <div class="lr-cell"><div class="action"><div class="action-text">Нічого не робить для цього. Бот веде пацієнта самостійно.</div><span class="action-tag auto">0 хвилин адміна</span></div></div>
+        <div class="lr-cell"><div class="action"><div class="action-text">Бачить adherence кожного пацієнта в реальному часі. Знає хто дотримується, хто ні — до наступного прийому.</div></div></div>
+        <div class="lr-cell"><div class="action"><div class="action-text">Дашборд: загальний adherence по клініці. Кореляція з результатами.</div></div></div>
+      </div>
+
+      <div class="lane-row">
+        <div class="lr-moment"><div class="moment-label">Дні 3 і 7</div></div>
+        <div class="lr-cell"><div class="action"><div class="action-text">Бот просить надіслати фото загоєння. Завантажує прямо в чат.</div><span class="action-tag auto">Нагадування · авто</span></div></div>
+        <div class="lr-cell"><div class="action"><div class="action-text">Фото автоматично зберігається в Proton Drive прив'язане до картки і дати.</div><span class="action-tag auto">Автоматично</span></div></div>
+        <div class="lr-cell"><div class="action"><div class="action-text">Бачить динаміку загоєння без дзвінків і запитів. Якщо щось не так — сповіщення.</div></div></div>
+        <div class="lr-cell empty"></div>
+      </div>
+
+      <div class="lane-row">
+        <div class="lr-moment"><div class="moment-label">«Це нормально?»</div></div>
+        <div class="lr-cell"><div class="action"><div class="action-text">Пише боту: «набряк 2 дні після Endymed, це нормально?». Отримує відповідь миттєво за затвердженим клінічним протоколом.</div></div></div>
+        <div class="lr-cell"><div class="action"><div class="action-text">Нестандартні або тривожні симптоми → Action Inbox з контекстом і рекомендацією.</div><span class="action-tag escalate">Ескалація · авто</span></div></div>
+        <div class="lr-cell"><div class="action"><div class="action-text">Отримує сповіщення про нетипові симптоми. Відповідає через систему — не в особистий телефон о 22:00.</div><span class="action-tag rules">За протоколом</span></div></div>
+        <div class="lr-cell empty"></div>
+      </div>
+
+      <div class="lane-row">
+        <div class="lr-moment"><div class="moment-label">Засоби</div></div>
+        <div class="lr-cell"><div class="action"><div class="action-text">За ~1 тиждень до закінчення засобу бот нагадує. Пацієнт замовляє одним кліком: забрати в клініці або Нова Пошта.</div><span class="action-tag auto">Нагадування + замовлення</span></div></div>
+        <div class="lr-cell"><div class="action"><div class="action-text">Вранці бачить список замовлень на сьогодні. Збирає і пакує.</div><span class="action-tag human">Пакування — людина</span></div></div>
+        <div class="lr-cell empty"></div>
+        <div class="lr-cell"><div class="action"><div class="action-text">Бачить динаміку продажів засобів. Прогноз коли знову потрібно замовляти у дистриб'ютора.</div></div></div>
+      </div>
+
+      <div class="key-moment">
+        <div class="km-label">Тут продукт унікальний — цього немає ніде</div>
+        <div class="km-text">Жодна існуюча система — ні Pabau, ні PatientNow, ні Klara — не веде пацієнта між процедурами з таким рівнем деталізації. Клініка <strong>вперше бачить що відбувається після виходу пацієнта з кабінету.</strong> Лікар знає хто дотримується протоколу до повторного прийому. Це змінює якість клінічних рішень.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ ФАЗА 5 ══ -->
+  <div class="phase open" id="p5">
+    <div class="phase-header" onclick="togglePhase('p5')">
+      <div class="phase-time"><div class="phase-time-label">Часовий рамок</div><div class="phase-time-val">Місяці 1–3</div></div>
+      <div class="phase-title-block">
+        <div class="phase-name">Продовження курсу — <em>повторні процедури</em></div>
+        <span class="phase-toggle">+</span>
+      </div>
+    </div>
+    <div class="phase-content">
+      <div class="lane-header">
+        <div class="lh-cell"></div>
+        <div class="lh-cell patient">Пацієнт</div>
+        <div class="lh-cell admin">Адміністратор</div>
+        <div class="lh-cell doctor">Лікар</div>
+        <div class="lh-cell owner">Власник</div>
+      </div>
+
+      <div class="lane-row">
+        <div class="lr-moment"><div class="moment-label">Наступний сеанс</div></div>
+        <div class="lr-cell"><div class="action"><div class="action-text">Бот пише першим: «Минув місяць після першого Nordlys — рекомендований наступний сеанс. Зручні дати: 25.05, 26.05, 27.05. Записати вас?». Підтверджує кнопкою.</div><span class="action-tag auto">Проактивно · авто</span></div></div>
+        <div class="lr-cell"><div class="action"><div class="action-text">Запис підтверджується автоматично або іде в Action Inbox якщо потрібна перевірка.</div><span class="action-tag auto">90% автоматично</span></div></div>
+        <div class="lr-cell empty"></div>
+        <div class="lr-cell"><div class="action"><div class="action-text">Бачить що автозапис на курс заповнює слоти без участі адміна.</div></div></div>
+      </div>
+
+      <div class="lane-row">
+        <div class="lr-moment"><div class="moment-label">Підготовка до огляду</div></div>
+        <div class="lr-cell"><div class="action"><div class="action-text">За 24 год до повторного огляду бот надсилає коротку анкету: «Як стан шкіри? Чи були побічні реакції? Які питання до лікаря?»</div><span class="action-tag auto">Автоматично</span></div></div>
+        <div class="lr-cell empty"></div>
+        <div class="lr-cell"><div class="action"><div class="action-text">Бачить відповіді пацієнта + adherence за весь період ДО прийому. Прийом одразу продуктивний.</div></div></div>
+        <div class="lr-cell empty"></div>
+      </div>
+
+      <div class="lane-row">
+        <div class="lr-moment"><div class="moment-label">Відгук</div></div>
+        <div class="lr-cell"><div class="action"><div class="action-text">Через 48 год після процедури: оцінка 1–5. Якщо 4–5 → посилання на Google Reviews. Якщо 1–3 → повідомлення що клініка зв'яжеться.</div></div></div>
+        <div class="lr-cell"><div class="action"><div class="action-text">Низька оцінка → Action Inbox з пріоритетом «терміново». Адмін зв'язується особисто.</div><span class="action-tag escalate">Терміново до адміна</span></div></div>
+        <div class="lr-cell empty"></div>
+        <div class="lr-cell"><div class="action"><div class="action-text">Бачить NPS в реальному часі. Тренди по процедурах, лікарях, часових проміжках.</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ ФАЗА 6 ══ -->
+  <div class="phase open" id="p6">
+    <div class="phase-header" onclick="togglePhase('p6')">
+      <div class="phase-time"><div class="phase-time-label">Часовий рамок</div><div class="phase-time-val">Місяці 3–6+</div></div>
+      <div class="phase-title-block">
+        <div class="phase-name">Утримання і повернення — <em>довгострокові відносини</em></div>
+        <span class="phase-toggle">+</span>
+      </div>
+    </div>
+    <div class="phase-content">
+      <div class="lane-header">
+        <div class="lh-cell"></div>
+        <div class="lh-cell patient">Пацієнт</div>
+        <div class="lh-cell admin">Адміністратор</div>
+        <div class="lh-cell doctor">Лікар</div>
+        <div class="lh-cell owner">Власник</div>
+      </div>
+
+      <div class="lane-row">
+        <div class="lr-moment"><div class="moment-label">Повторний огляд через 3 міс</div></div>
+        <div class="lr-cell"><div class="action"><div class="action-text">Бот пише: «Минуло 3 місяці з вашого останнього огляду. Рекомендований повторний візит. Записати вас?»</div><span class="action-tag auto">Проактивно · авто</span></div></div>
+        <div class="lr-cell"><div class="action"><div class="action-text">Запис через бота без участі адміна.</div><span class="action-tag auto">Автоматично</span></div></div>
+        <div class="lr-cell"><div class="action"><div class="action-text">Бачить adherence за 3 місяці до прийому. Знає чи виконував пацієнт протокол.</div></div></div>
+        <div class="lr-cell empty"></div>
+      </div>
+
+      <div class="lane-row">
+        <div class="lr-moment"><div class="moment-label">Win-back якщо зник</div></div>
+        <div class="lr-cell"><div class="action"><div class="action-text">Якщо є незакінчений курс: «Ви пройшли 3 з 6 сеансів Nordlys. Залишились три для повного результату — продовжимо?» Якщо немає курсу: персональна пропозиція або знижка.</div></div></div>
+        <div class="lr-cell"><div class="action"><div class="action-text">Система автоматично визначає сегмент і надсилає правильне повідомлення. Адмін бачить в Action Inbox хто відповів.</div><span class="action-tag auto">Сегментація · авто</span></div></div>
+        <div class="lr-cell empty"></div>
+        <div class="lr-cell"><div class="action"><div class="action-text">Бачить win-back воронку: скільки відправлено, скільки відповіли, скільки записались, скільки прийшли.</div></div></div>
+      </div>
+
+      <div class="lane-row">
+        <div class="lr-moment"><div class="moment-label">Patient Portal</div></div>
+        <div class="lr-cell"><div class="action"><div class="action-text">Відкриває Patient Portal: бачить всі плани від усіх лікарів клініки, трекер за 6 місяців, прогрес-фото, аналізи з графіком динаміки. Вперше бачить своє лікування як ціле.</div></div></div>
+        <div class="lr-cell empty"></div>
+        <div class="lr-cell"><div class="action"><div class="action-text">Бачить ту саму картину. Може порівняти фото, переглянути adherence, оновити план.</div></div></div>
+        <div class="lr-cell"><div class="action"><div class="action-text">Бачить LTV кожного пацієнта, сегменти за активністю, прогнозування відтоку.</div></div></div>
+      </div>
+
+      <div class="key-moment">
+        <div class="km-label">Підсумок 6 місяців</div>
+        <div class="km-text">Пацієнт який 6 місяців тому написав «скільки коштує чистка?» тепер має повну картину свого лікування, виконаний протокол і реальний результат. <strong>Клініка не «надала послугу» — вона супроводжувала людину.</strong> Це і є wellness підхід про який важко розповісти словами — але легко показати цим маршрутом.</div>
+      </div>
+
+      <!-- NOT AUTOMATED -->
+      <div class="not-auto-block">
+        <div class="not-auto-title">Що система ніколи не автоматизує — і чому це правильно</div>
+        <div class="not-auto-grid">
+          <div class="not-auto-item">Конфлікти і скарги — потребують емпатії живої людини</div>
+          <div class="not-auto-item">Складні медичні рішення — завжди залишаються лікарю</div>
+          <div class="not-auto-item">Зустріч гостя, чай/кава, перше враження</div>
+          <div class="not-auto-item">Повернення коштів — тільки з approval власника</div>
+          <div class="not-auto-item">VIP-пацієнти — позначаються в системі, бот не турбує зайвий раз</div>
+          <div class="not-auto-item">Готівкові операції і каса</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- SUMMARY -->
+<div class="summary">
+
+  <div class="summary-grid">
+    <div class="summary-cell"><div class="summary-num gr">~65%</div><div class="summary-label">рутинної комунікації автоматизовано</div></div>
+    <div class="summary-cell"><div class="summary-num gd">6 год</div><div class="summary-label">звільняється щодня у двох адмінів</div></div>
+    <div class="summary-cell"><div class="summary-num rd">0</div><div class="summary-label">аналогів на ринку України та ЄС</div></div>
+    <div class="summary-cell"><div class="summary-num bl">4</div><div class="summary-label">ролі в єдиній екосистемі</div></div>
+  </div>
+
+  <!-- RULES ENGINE SOURCES -->
+  <div class="rules-sources">
+    <div class="rs-title">Rules Engine — звідки беруться правила</div>
+    <div class="rs-grid">
+      <div class="rs-item">
+        <div class="rs-level">Рівень 1</div>
+        <div class="rs-name">Клінічні протоколи</div>
+        <div class="rs-desc">Затверджені лікарями клініки правила для кожної процедури. Хто затвердив, коли, хто може змінити. Юридична відповідальність — на лікарі.</div>
+      </div>
+      <div class="rs-item">
+        <div class="rs-level">Рівень 2</div>
+        <div class="rs-name">Налаштування лікаря</div>
+        <div class="rs-desc">Кожен лікар може налаштувати власні правила. Один робить SMAS після філерів через 21 день, інший — через 14. Обидва варіанти в системі.</div>
+      </div>
+      <div class="rs-item">
+        <div class="rs-level">Рівень 3</div>
+        <div class="rs-name">Історія пацієнта</div>
+        <div class="rs-desc">Що і коли робилось, які реакції були, які протипоказання в анкеті. Rules Engine читає картку при кожному запиті на запис.</div>
+      </div>
+      <div class="rs-item">
+        <div class="rs-level">Рівень 4</div>
+        <div class="rs-name">Бізнес-політики</div>
+        <div class="rs-desc">Мінімальний інтервал для скасування, розмір депозиту, правила waitlist. Власник налаштовує сам без участі розробників.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- CLOSING -->
+<div class="closing">
+  <p class="closing-q">Це не бот для нагадувань.<br><em>Це операційна система patient journey.</em></p>
+  <div class="closing-sub">Care Assistant · Patient Journey Map · Травень 2026 · Revive Clinic, Львів</div>
+</div>
+
+<script>
+function togglePhase(id) {
+  const phase = document.getElementById(id);
+  phase.classList.toggle('open');
+}
+</script>
+</body>
+</html>

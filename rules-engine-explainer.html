@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rules Engine — Архітектура та таблиця</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Outfit:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0c0d0a;--surface:#121410;--surface2:#181a14;--surface3:#1e2118;
+  --border:rgba(255,255,255,.06);--border2:rgba(255,255,255,.1);
+  --ink:#f0ede6;--muted:rgba(240,237,230,.45);--dim:rgba(240,237,230,.2);
+  --green:#3d7a52;--gb:#5aaa70;--gp:rgba(61,122,82,.15);--gm:#c5dbc9;
+  --gold:#b8975a;--gd:rgba(184,151,90,.12);
+  --red:#c05050;--rp:rgba(192,80,80,.12);
+  --amber:#d4913a;--ap:rgba(212,145,58,.12);
+  --blue:#4a7eb5;--bp:rgba(74,126,181,.12);
+  --mono:'JetBrains Mono',monospace;
+}
+html{scroll-behavior:smooth}
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.6}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.03'/%3E%3C/svg%3E");pointer-events:none;z-index:0;opacity:.5}
+
+.nav{position:fixed;top:0;left:0;right:0;z-index:100;height:52px;background:rgba(12,13,10,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 40px}
+.nav-logo{font-family:'Cormorant Garamond',serif;font-size:15px;color:var(--muted);letter-spacing:.06em}
+.nav-logo span{color:var(--gb)}
+.nav-links{display:flex;list-style:none;gap:0}
+.nav-links a{font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);text-decoration:none;padding:0 12px;height:52px;display:flex;align-items:center;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap}
+.nav-links a:hover{color:var(--muted);border-bottom-color:var(--gb)}
+
+.cover{background:var(--surface);min-height:50vh;display:flex;flex-direction:column;justify-content:flex-end;padding:80px 64px 56px;position:relative;overflow:hidden;border-bottom:1px solid var(--border)}
+.cover::before{content:'';position:absolute;top:-30%;right:-10%;width:55%;height:130%;background:radial-gradient(ellipse,rgba(61,122,82,.2) 0%,transparent 65%);pointer-events:none}
+.cover-tag{font-size:11px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--gb);margin-bottom:18px;opacity:.8;position:relative;z-index:1}
+.cover-title{font-family:'Cormorant Garamond',serif;font-size:clamp(32px,5vw,58px);font-weight:300;color:var(--ink);line-height:1.1;margin-bottom:14px;position:relative;z-index:1}
+.cover-title em{font-style:italic;color:var(--gb)}
+.cover-sub{font-size:15px;font-weight:300;color:var(--muted);max-width:580px;line-height:1.65;position:relative;z-index:1}
+
+.wrap{max-width:1060px;margin:0 auto;padding:0 64px}
+
+.section{padding:64px 0;position:relative;z-index:1}
+.section--alt{background:var(--surface);padding:64px 0;position:relative;z-index:1}
+
+.ey{font-size:10px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:12px}
+.ey--g{color:var(--gb)}
+h2{font-family:'Cormorant Garamond',serif;font-size:clamp(24px,3.5vw,40px);font-weight:300;line-height:1.15;margin-bottom:14px}
+h2 em{font-style:italic;color:var(--gb)}
+.lead{font-size:15px;font-weight:300;color:var(--muted);line-height:1.7;margin-bottom:24px;max-width:680px}
+
+/* ARCH DIAGRAM */
+.arch{background:var(--surface2);border:1px solid var(--border);padding:32px;margin:28px 0;font-family:var(--mono);font-size:12px;color:var(--muted);line-height:2;overflow-x:auto}
+.arch .highlight{color:var(--gb);font-weight:500}
+.arch .dim{color:var(--dim)}
+.arch .arrow{color:rgba(255,255,255,.2)}
+.arch .block{background:rgba(61,122,82,.1);border:1px solid rgba(61,122,82,.2);padding:2px 10px;display:inline-block;margin:2px 0}
+.arch .block-red{background:rgba(192,80,80,.1);border:1px solid rgba(192,80,80,.2);padding:2px 10px;display:inline-block;margin:2px 0}
+.arch .block-amber{background:rgba(212,145,58,.1);border:1px solid rgba(212,145,58,.2);padding:2px 10px;display:inline-block;margin:2px 0}
+
+/* RULE TABLE */
+.rule-table{width:100%;border-collapse:collapse;margin:24px 0;font-size:12px}
+.rule-table th{background:var(--surface2);color:var(--dim);font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;text-align:left;border-bottom:1px solid var(--border2);white-space:nowrap}
+.rule-table td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top;line-height:1.5}
+.rule-table tr:hover td{background:rgba(255,255,255,.02)}
+
+/* CATEGORY HEADER ROW */
+.rule-table .cat-row td{background:var(--surface2);color:var(--gb);font-size:10px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;padding:7px 14px;border-bottom:1px solid var(--border)}
+
+/* RESULT BADGES */
+.res{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:3px 10px;border-radius:2px;white-space:nowrap;display:inline-block}
+.res.allow{background:rgba(90,170,112,.2);color:var(--gb)}
+.res.block{background:rgba(192,80,80,.2);color:var(--red)}
+.res.approval{background:rgba(212,145,58,.2);color:var(--amber)}
+.res.warn{background:rgba(74,126,181,.2);color:var(--blue)}
+
+/* LEVEL BADGE */
+.lvl{font-size:10px;font-weight:600;letter-spacing:.06em;padding:2px 8px;border-radius:2px;white-space:nowrap;display:inline-block}
+.lvl.l1{background:rgba(90,170,112,.15);color:var(--gb)}
+.lvl.l2{background:rgba(184,151,90,.15);color:var(--gold)}
+.lvl.l3{background:rgba(74,126,181,.15);color:var(--blue)}
+.lvl.l4{background:rgba(138,106,181,.15);color:#8a6ab5}
+
+/* SOURCE GRID */
+.src-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:24px 0}
+.src-card{background:var(--surface2);border:1px solid var(--border);padding:20px}
+.src-level{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--gb);margin-bottom:10px}
+.src-title{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:8px}
+.src-list{list-style:none;display:flex;flex-direction:column;gap:5px}
+.src-list li{font-size:11px;color:var(--muted);display:flex;gap:6px;line-height:1.4}
+.src-list li::before{content:'·';color:var(--gb);flex-shrink:0}
+
+/* CODE BLOCK */
+.code{background:var(--surface2);border:1px solid var(--border);padding:20px 24px;margin:20px 0;font-family:var(--mono);font-size:12px;color:var(--muted);line-height:1.8;overflow-x:auto}
+.code .k{color:var(--gb)}
+.code .s{color:#c5dbc9}
+.code .n{color:var(--gold)}
+.code .c{color:var(--dim);font-style:italic}
+.code .v{color:#b8d4ff}
+
+/* EXAMPLE BOXES */
+.example-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:24px 0}
+.ex-card{background:var(--surface2);border:1px solid var(--border);padding:20px 24px}
+.ex-tag{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:12px}
+.ex-scenario{font-size:13px;color:var(--ink);margin-bottom:10px;line-height:1.5}
+.ex-check{font-size:12px;color:var(--muted);margin-bottom:6px;display:flex;gap:8px;line-height:1.4}
+.ex-check::before{content:'→';color:var(--dim);flex-shrink:0}
+.ex-result{margin-top:12px;padding:10px 14px;background:var(--surface3);border-left:3px solid var(--gb);font-size:12px;color:var(--muted);line-height:1.5}
+.ex-result.block{border-left-color:var(--red)}
+.ex-result.approval{border-left-color:var(--amber)}
+
+/* COST TABLE */
+.cost-table{width:100%;border-collapse:collapse;margin:24px 0;font-size:13px}
+.cost-table th{background:var(--surface2);color:var(--dim);font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;text-align:left;border-bottom:1px solid var(--border2)}
+.cost-table td{padding:10px 14px;border-bottom:1px solid var(--border);color:var(--muted);vertical-align:top}
+.cost-table tr:last-child td{border-bottom:none;font-weight:600;color:var(--ink);background:rgba(61,122,82,.08)}
+.cost-val{color:var(--gb);font-weight:600}
+.cost-total{font-family:'Cormorant Garamond',serif;font-size:28px;color:var(--gb)}
+
+.divider{width:40px;height:2px;background:var(--green);margin:20px 0}
+
+.closing{text-align:center;padding:56px 64px;border-top:1px solid var(--border);position:relative;z-index:1}
+.closing-q{font-family:'Cormorant Garamond',serif;font-size:clamp(20px,3vw,36px);font-weight:300;color:var(--ink);line-height:1.3;max-width:560px;margin:0 auto 12px}
+.closing-q em{font-style:italic;color:var(--gb)}
+.closing-sub{font-size:12px;color:var(--dim)}
+
+@media(max-width:800px){
+  .nav-links{display:none}
+  .cover,.wrap{padding-left:24px;padding-right:24px}
+  .cover{padding-top:80px}
+  .src-grid,.example-grid{grid-template-columns:1fr}
+  .rule-table{font-size:11px}
+  .rule-table th,.rule-table td{padding:8px 10px}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-logo">Care <span>Assistant</span> · Rules Engine</div>
+  <ul class="nav-links">
+    <li><a href="#arch">Архітектура</a></li>
+    <li><a href="#sources">Джерела</a></li>
+    <li><a href="#table">Таблиця правил</a></li>
+    <li><a href="#examples">Приклади</a></li>
+    <li><a href="#cost">Вартість</a></li>
+  </ul>
+</nav>
+
+<!-- COVER -->
+<div class="cover">
+  <div class="cover-tag">Care Assistant · Rules Engine</div>
+  <h1 class="cover-title">Не магія —<br><em>детермінована логіка</em></h1>
+  <p class="cover-sub">Rules Engine — це система перевірок з передбачуваним результатом. Жодного AI всередині. AI використовується тільки на вході для парсингу тексту. Далі — чиста if-then логіка.</p>
+</div>
+
+<!-- ARCH -->
+<div class="section--alt" id="arch">
+<div class="wrap">
+  <div class="ey--g ey">Архітектура</div>
+  <h2>Як Rules Engine <em>приймає рішення</em></h2>
+  <p class="lead">Кожен запит проходить через чотири шари перевірок. Зупиняється на першому порушенні або проходить усі — і отримує дозвіл.</p>
+
+  <div class="arch">
+<span class="highlight">ВХІД: Запит на дію</span><br>
+<span class="dim">Тип: запис / нагадування / рекомендація / after-care</span><br>
+<span class="dim">Ініціатор: пацієнт / бот / адмін / лікар</span><br>
+<br>
+<span class="arrow">↓</span><br>
+<br>
+<span class="highlight">КРОК 1 · Збір контексту</span><br>
+<span class="block">Хто: patient_id → profile</span>  <span class="block">Що: procedure_id → metadata</span><br>
+<span class="block">Коли: timestamp</span>  <span class="block">Історія: last_N_procedures</span><br>
+<span class="block">Анкета: contraindications[]</span>  <span class="block">Активні ліки: medications[]</span><br>
+<br>
+<span class="arrow">↓</span><br>
+<br>
+<span class="highlight">КРОК 2 · Перебір правил (по пріоритету)</span><br>
+<br>
+<span class="dim">Рівень 1 (критичний) → медичні протоколи клініки</span><br>
+<span class="block-red">rule: no_laser_after_sunburn</span>  <span class="block-red">rule: min_interval_procedures</span><br>
+<span class="block-red">rule: contraindication_check</span>  <span class="block-red">rule: medication_interaction</span><br>
+<br>
+<span class="dim">Рівень 2 → налаштування лікаря</span><br>
+<span class="block-amber">rule: doctor_specific_interval</span>  <span class="block-amber">rule: doctor_preferred_combo</span><br>
+<br>
+<span class="dim">Рівень 3 → бізнес-політики клініки</span><br>
+<span class="block">rule: cancellation_policy</span>  <span class="block">rule: deposit_required</span><br>
+<span class="block">rule: vip_patient_flag</span>  <span class="block">rule: blackout_dates</span><br>
+<br>
+<span class="dim">Рівень 4 → персональна історія</span><br>
+<span class="block">rule: noshow_risk_score</span>  <span class="block">rule: previous_reactions</span><br>
+<br>
+<span class="arrow">↓</span><br>
+<br>
+<span class="highlight">КРОК 3 · Результат</span><br>
+<br>
+<span class="block">ALLOW</span> → дія виконується автоматично<br>
+<span class="block-red">BLOCK</span> → дія заблокована + пояснення + альтернатива<br>
+<span class="block-amber">APPROVAL_REQUIRED</span> → запит до лікаря або власника<br>
+<span class="block-amber">WARN</span> → дія дозволена але з попередженням<br>
+<br>
+<span class="arrow">↓</span><br>
+<br>
+<span class="highlight">ВИХІД: Дія або ескалація</span>
+  </div>
+
+  <div class="code">
+<span class="c">// Приклад одного правила у псевдокоді</span><br>
+<span class="k">rule</span> <span class="n">laser_after_sunburn</span> {<br>
+&nbsp;&nbsp;<span class="k">priority</span>: <span class="v">CRITICAL</span><br>
+&nbsp;&nbsp;<span class="k">trigger</span>: <span class="s">procedure.category == "laser"</span><br>
+&nbsp;&nbsp;<span class="k">condition</span>: <span class="s">patient.questionnaire.sunburn_last_4w == true</span><br>
+&nbsp;&nbsp;<span class="k">result</span>: <span class="v">BLOCK</span><br>
+&nbsp;&nbsp;<span class="k">message</span>: <span class="s">"Лазерну процедуру не рекомендовано протягом 4 тижнів після засмаги"</span><br>
+&nbsp;&nbsp;<span class="k">alternative</span>: <span class="s">"Пропонуємо Hydrafacial або Dermadrop — без обмежень по засмазі"</span><br>
+&nbsp;&nbsp;<span class="k">escalation</span>: <span class="s">doctor.approval_available == true</span><br>
+}<br>
+<br>
+<span class="c">// Правило перевіряється при кожному запиті на запис</span><br>
+<span class="c">// Якщо пацієнт відповів "так" на питання про засмагу в анкеті —</span><br>
+<span class="c">// блокується автоматично, пропонується альтернатива або лікар</span>
+  </div>
+</div>
+</div>
+
+<!-- SOURCES -->
+<div class="section" id="sources">
+<div class="wrap">
+  <div class="ey">Джерела правил</div>
+  <h2>Чотири рівні — <em>не один</em></h2>
+  <p class="lead">Кожне правило в системі має чітке джерело, автора і дату затвердження. Це знімає питання відповідальності.</p>
+
+  <div class="src-grid">
+    <div class="src-card">
+      <div class="src-level">Рівень 1 · Критичний</div>
+      <div class="src-title">Клінічні протоколи клініки</div>
+      <ul class="src-list">
+        <li>Затверджуються лікарями клініки письмово</li>
+        <li>Фіксується: хто затвердив, коли, яка версія</li>
+        <li>Змінює тільки головний лікар або власник</li>
+        <li>Юридична відповідальність — на лікарі-авторі</li>
+        <li>Система виконує протокол, не створює його</li>
+      </ul>
+    </div>
+    <div class="src-card">
+      <div class="src-level">Рівень 2 · Лікар</div>
+      <div class="src-title">Персональні налаштування лікаря</div>
+      <ul class="src-list">
+        <li>Кожен лікар налаштовує свої правила</li>
+        <li>Один: SMAS після філерів — 21 день</li>
+        <li>Інший: SMAS після філерів — 14 днів</li>
+        <li>Обидва варіанти коректні — просто різна практика</li>
+        <li>Пацієнт запису до конкретного лікаря отримує його правила</li>
+      </ul>
+    </div>
+    <div class="src-card">
+      <div class="src-level">Рівень 3 · Бізнес</div>
+      <div class="src-title">Бізнес-політики клініки</div>
+      <ul class="src-list">
+        <li>Власник налаштовує без участі розробників</li>
+        <li>Мінімальний термін скасування (24, 48 год)</li>
+        <li>Розмір депозиту і коли він required</li>
+        <li>Правила waitlist (FIFO або по LTV)</li>
+        <li>VIP-прапорець (бот не турбує масовим)</li>
+        <li>Blackout дати (клініка не приймає)</li>
+      </ul>
+    </div>
+    <div class="src-card">
+      <div class="src-level">Рівень 4 · Пацієнт</div>
+      <div class="src-title">Персональна історія</div>
+      <ul class="src-list">
+        <li>Що і коли робилось — з дат процедур</li>
+        <li>Які реакції були — з after-care відповідей</li>
+        <li>Протипоказання з анкети</li>
+        <li>Активні ліки (ретиноїди, антибіотики)</li>
+        <li>No-show score — з поведінки</li>
+        <li>Фаза менструального циклу (якщо consent)</li>
+      </ul>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- TABLE -->
+<div class="section--alt" id="table">
+<div class="wrap">
+  <div class="ey--g ey">Повна таблиця правил</div>
+  <h2>Всі правила Rules Engine — <em>розширено</em></h2>
+  <p class="lead">Для кожного правила: що перевіряється, джерело, результат і що відбувається далі.</p>
+
+  <table class="rule-table">
+    <thead>
+      <tr>
+        <th>Правило</th>
+        <th>Тригер</th>
+        <th>Що перевіряється</th>
+        <th>Джерело</th>
+        <th>Результат</th>
+        <th>Повідомлення / Дія</th>
+      </tr>
+    </thead>
+    <tbody>
+
+      <!-- МЕДИЧНІ ПРОТИПОКАЗАННЯ -->
+      <tr class="cat-row"><td colspan="6">🔴 МЕДИЧНІ ПРОТИПОКАЗАННЯ · Рівень 1 · Критичний</td></tr>
+
+      <tr>
+        <td><strong>Засмага + лазер</strong></td>
+        <td>Запис на лазерну процедуру</td>
+        <td>Анкета: засмага/солярій за останні 4 тижні</td>
+        <td><span class="lvl l1">Протокол</span></td>
+        <td><span class="res block">Блок</span></td>
+        <td>«Лазер протипоказаний після засмаги. Пропонуємо Hydrafacial або записати на лазер через 4 тижні»</td>
+      </tr>
+
+      <tr>
+        <td><strong>Ретиноїди + лазер</strong></td>
+        <td>Запис на лазерну або апаратну процедуру</td>
+        <td>Активні ліки: ретиноїди (акнекутан та ін.)</td>
+        <td><span class="lvl l1">Протокол</span></td>
+        <td><span class="res block">Блок</span></td>
+        <td>«Під час прийому ретиноїдів лазерні процедури не рекомендовано. Уточніть у лікаря»</td>
+      </tr>
+
+      <tr>
+        <td><strong>Вагітність</strong></td>
+        <td>Будь-який запис на процедуру</td>
+        <td>Анкета: вагітність або підозра на вагітність</td>
+        <td><span class="lvl l1">Протокол</span></td>
+        <td><span class="res approval">Approval</span></td>
+        <td>Запит до лікаря: «Пацієнтка відмітила вагітність. Підтвердіть або відхиліть запис»</td>
+      </tr>
+
+      <tr>
+        <td><strong>Антибіотики + лазер</strong></td>
+        <td>Запис на лазер або фотопроцедуру</td>
+        <td>Активні ліки: антибіотики (фотосенсибілізація)</td>
+        <td><span class="lvl l1">Протокол</span></td>
+        <td><span class="res block">Блок</span></td>
+        <td>«Антибіотики підвищують чутливість шкіри до лазеру. Запис можливий через 7 днів після курсу»</td>
+      </tr>
+
+      <tr>
+        <td><strong>Онкологія в анамнезі</strong></td>
+        <td>Будь-який запис на апаратну процедуру</td>
+        <td>Анкета: онкологія</td>
+        <td><span class="lvl l1">Протокол</span></td>
+        <td><span class="res approval">Approval</span></td>
+        <td>Обов'язковий approval лікаря з переглядом анкети перед підтвердженням</td>
+      </tr>
+
+      <tr>
+        <td><strong>Алергія на анестетик</strong></td>
+        <td>Запис на Dermapen, Endymed, ін'єкції</td>
+        <td>Анкета: алергія на лідокаїн або адреналін</td>
+        <td><span class="lvl l1">Протокол</span></td>
+        <td><span class="res approval">Approval</span></td>
+        <td>«Виявлено алергію на компоненти анестезії. Лікар підтвердить альтернативний протокол»</td>
+      </tr>
+
+      <!-- ІНТЕРВАЛИ МІЖ ПРОЦЕДУРАМИ -->
+      <tr class="cat-row"><td colspan="6">🟡 МІНІМАЛЬНІ ІНТЕРВАЛИ МІЖ ПРОЦЕДУРАМИ · Рівень 1–2</td></tr>
+
+      <tr>
+        <td><strong>Лазер → лазер</strong></td>
+        <td>Запис на лазерну процедуру</td>
+        <td>Остання лазерна процедура: &lt; 21 дня тому</td>
+        <td><span class="lvl l1">Протокол</span></td>
+        <td><span class="res block">Блок</span></td>
+        <td>«Мінімальний інтервал між лазерними процедурами — 21 день. Найближча дата: [дата]»</td>
+      </tr>
+
+      <tr>
+        <td><strong>Філери → лазер</strong></td>
+        <td>Запис на лазерну процедуру</td>
+        <td>Остання ін'єкція філерів: &lt; 14 днів</td>
+        <td><span class="lvl l1">Протокол</span></td>
+        <td><span class="res block">Блок</span></td>
+        <td>«Після філерів рекомендований інтервал до лазеру — 14 днів»</td>
+      </tr>
+
+      <tr>
+        <td><strong>Ботокс → лазер</strong></td>
+        <td>Запис на лазерну процедуру</td>
+        <td>Остання ботулінотерапія: &lt; 14 днів</td>
+        <td><span class="lvl l1">Протокол</span></td>
+        <td><span class="res block">Блок</span></td>
+        <td>«Рекомендований інтервал після ботоксу — 14 днів. Можна записати на [дата]»</td>
+      </tr>
+
+      <tr>
+        <td><strong>Dermapen → ін'єкції</strong></td>
+        <td>Запис на ін'єкційну процедуру</td>
+        <td>Dermapen: &lt; 7 днів тому</td>
+        <td><span class="lvl l1">Протокол</span></td>
+        <td><span class="res block">Блок</span></td>
+        <td>«Після мікронідлінгу рекомендований інтервал до ін'єкцій — 7 днів»</td>
+      </tr>
+
+      <tr>
+        <td><strong>SMAS → філери</strong></td>
+        <td>Запис на контурну пластику</td>
+        <td>SMAS Ultraformer: &lt; 14 днів тому</td>
+        <td><span class="lvl l2">Лікар</span></td>
+        <td><span class="res approval">Approval</span></td>
+        <td>«Інтервал залежить від протоколу лікаря. Запит надіслано на підтвердження»</td>
+      </tr>
+
+      <tr>
+        <td><strong>Лазерна епіляція → курс</strong></td>
+        <td>Запис на наступний сеанс</td>
+        <td>Інтервал за зоною: обличчя 28д, тіло 35–42д</td>
+        <td><span class="lvl l1">Протокол</span></td>
+        <td><span class="res warn">Попередження</span></td>
+        <td>Якщо рано — попередження. Якщо запис все ж потрібен — approval лікаря</td>
+      </tr>
+
+      <!-- СУМІСНІСТЬ -->
+      <tr class="cat-row"><td colspan="6">🟢 СУМІСНІСТЬ І КОМБІНАЦІЇ ПРОЦЕДУР · Рівень 1–2</td></tr>
+
+      <tr>
+        <td><strong>Healite II після лазеру</strong></td>
+        <td>Запис на Healite II в день лазеру</td>
+        <td>Попередня процедура сьогодні: лазер</td>
+        <td><span class="lvl l1">Протокол</span></td>
+        <td><span class="res allow">Дозволено</span></td>
+        <td>«Healite II можна поєднувати з лазером — прискорює загоєння. Рекомендуємо»</td>
+      </tr>
+
+      <tr>
+        <td><strong>Dermadrop + LED</strong></td>
+        <td>Запис на Dermadrop в день LED-процедури</td>
+        <td>—</td>
+        <td><span class="lvl l1">Протокол</span></td>
+        <td><span class="res allow">Дозволено</span></td>
+        <td>Комбінація підтверджена протоколом. Автозапис без участі адміна</td>
+      </tr>
+
+      <tr>
+        <td><strong>Nordlys + Dermadrop</strong></td>
+        <td>Одночасний запис на обидві</td>
+        <td>—</td>
+        <td><span class="lvl l1">Протокол</span></td>
+        <td><span class="res allow">Дозволено</span></td>
+        <td>«Nordlys постакне + Dermadrop можна поєднувати в один сеанс»</td>
+      </tr>
+
+      <tr>
+        <td><strong>Дві ін'єкційні в один день</strong></td>
+        <td>Запис на другу ін'єкційну</td>
+        <td>Вже є ін'єкційна процедура сьогодні</td>
+        <td><span class="lvl l2">Лікар</span></td>
+        <td><span class="res approval">Approval</span></td>
+        <td>«Дві ін'єкційні в один день потребують підтвердження лікаря»</td>
+      </tr>
+
+      <tr>
+        <td><strong>Ботокс + SMAS один день</strong></td>
+        <td>Запис на другу процедуру</td>
+        <td>Вже є одна з цих двох сьогодні</td>
+        <td><span class="lvl l1">Протокол</span></td>
+        <td><span class="res block">Блок</span></td>
+        <td>«Ботулінотерапію і SMAS не рекомендовано проводити в один день»</td>
+      </tr>
+
+      <!-- ПЕРЕДПРОЦЕДУРНА ПІДГОТОВКА -->
+      <tr class="cat-row"><td colspan="6">🔵 ПЕРЕДПРОЦЕДУРНА ПІДГОТОВКА · Рівень 1</td></tr>
+
+      <tr>
+        <td><strong>Волосся перед епіляцією</strong></td>
+        <td>Нагадування за 48 год до лазерної епіляції</td>
+        <td>—</td>
+        <td><span class="lvl l1">Протокол</span></td>
+        <td><span class="res allow">Нагадування</span></td>
+        <td>«Поголіть зону за 24–48 годин. Не використовуйте воскову депіляцію»</td>
+      </tr>
+
+      <tr>
+        <td><strong>Голодування перед процедурою</strong></td>
+        <td>Нагадування за 24 год до анестезії</td>
+        <td>Процедура потребує анестезії</td>
+        <td><span class="lvl l1">Протокол</span></td>
+        <td><span class="res allow">Нагадування</span></td>
+        <td>«Легкий сніданок за 2 год. Не їжте важкої їжі за 4 год до процедури»</td>
+      </tr>
+
+      <tr>
+        <td><strong>Анестетик: алергія</strong></td>
+        <td>Будь-який запис де потрібна анестезія</td>
+        <td>Анкета: алергія на лідокаїн або суміжні</td>
+        <td><span class="lvl l1">Протокол</span></td>
+        <td><span class="res approval">Approval</span></td>
+        <td>Обов'язковий approval лікаря з позначкою «алергія на анестетик»</td>
+      </tr>
+
+      <!-- БІЗНЕС-ПРАВИЛА -->
+      <tr class="cat-row"><td colspan="6">🟤 БІЗНЕС-ПРАВИЛА КЛІНІКИ · Рівень 3</td></tr>
+
+      <tr>
+        <td><strong>No-show ризик</strong></td>
+        <td>Підтвердження запису</td>
+        <td>No-show score пацієнта: ≥ 2 пропуски за 3 місяці</td>
+        <td><span class="lvl l3">Бізнес</span></td>
+        <td><span class="res warn">Попередження</span></td>
+        <td>Додаткове нагадування за 3 год. Запит передоплати. Ризик видно в розкладі адміна.</td>
+      </tr>
+
+      <tr>
+        <td><strong>Пізнє скасування</strong></td>
+        <td>Скасування запису</td>
+        <td>До процедури: &lt; 24 год</td>
+        <td><span class="lvl l3">Бізнес</span></td>
+        <td><span class="res warn">Попередження</span></td>
+        <td>«Скасування менш ніж за 24 год — депозит переходить на наступний візит. Підтверджуєте?»</td>
+      </tr>
+
+      <tr>
+        <td><strong>Депозит required</strong></td>
+        <td>Запис пацієнта з no-show history</td>
+        <td>No-show score ≥ 3</td>
+        <td><span class="lvl l3">Бізнес</span></td>
+        <td><span class="res warn">Умова</span></td>
+        <td>«Для підтвердження запису потрібна передоплата. Посилання на оплату»</td>
+      </tr>
+
+      <tr>
+        <td><strong>VIP пацієнт</strong></td>
+        <td>Масова кампанія або нагадування</td>
+        <td>patient.vip == true</td>
+        <td><span class="lvl l3">Бізнес</span></td>
+        <td><span class="res block">Виключено</span></td>
+        <td>VIP-пацієнти не отримують масових повідомлень. Тільки персональні від адміна.</td>
+      </tr>
+
+      <tr>
+        <td><strong>Повернення коштів</strong></td>
+        <td>Запит на повернення від пацієнта</td>
+        <td>—</td>
+        <td><span class="lvl l3">Бізнес</span></td>
+        <td><span class="res approval">Approval</span></td>
+        <td>Будь-яке повернення → approval власника. Без стихійних рішень адміна.</td>
+      </tr>
+
+      <!-- ПЕРСОНАЛЬНА ІСТОРІЯ -->
+      <tr class="cat-row"><td colspan="6">🟣 ПЕРСОНАЛЬНА ІСТОРІЯ ПАЦІЄНТА · Рівень 4</td></tr>
+
+      <tr>
+        <td><strong>Попередня побічна реакція</strong></td>
+        <td>Запис на ту саму процедуру</td>
+        <td>After-care: повідомляв про нетипову реакцію</td>
+        <td><span class="lvl l4">Історія</span></td>
+        <td><span class="res approval">Approval</span></td>
+        <td>«Пацієнт раніше повідомляв про нетипову реакцію. Рекомендуємо консультацію лікаря»</td>
+      </tr>
+
+      <tr>
+        <td><strong>Аналізи до процедури</strong></td>
+        <td>Нагадування за 3 дні до огляду</td>
+        <td>Лікар призначив аналізи; статус: не завантажено</td>
+        <td><span class="lvl l4">Історія</span></td>
+        <td><span class="res warn">Нагадування</span></td>
+        <td>«До вашого візиту призначені аналізи. Завантажте результати в особистий кабінет»</td>
+      </tr>
+
+      <tr>
+        <td><strong>День циклу (за consent)</strong></td>
+        <td>Нагадування про аналізи</td>
+        <td>Призначення: аналізи на 2-й день циклу</td>
+        <td><span class="lvl l4">Історія</span></td>
+        <td><span class="res allow">Нагадування</span></td>
+        <td>«Сьогодні 2-й день циклу — рекомендований день для здачі гормональної панелі»</td>
+      </tr>
+
+      <tr>
+        <td><strong>Незавершений курс</strong></td>
+        <td>Новий запис на іншу процедуру</td>
+        <td>Активний курс: пройдено &lt; N сеансів з M</td>
+        <td><span class="lvl l4">Історія</span></td>
+        <td><span class="res warn">Попередження</span></td>
+        <td>«У вас незавершений курс Nordlys (3 з 6). Пропонуємо продовжити перед новою процедурою»</td>
+      </tr>
+
+      <tr>
+        <td><strong>Засоби закінчуються</strong></td>
+        <td>Розрахунок дати закінчення</td>
+        <td>Засіб: (дата початку + тривалість) - 7 днів</td>
+        <td><span class="lvl l4">Історія</span></td>
+        <td><span class="res allow">Нагадування</span></td>
+        <td>«Ваш SPF закінчується приблизно через 7 днів. Замовити?»</td>
+      </tr>
+
+    </tbody>
+  </table>
+</div>
+</div>
+
+<!-- EXAMPLES -->
+<div class="section" id="examples">
+<div class="wrap">
+  <div class="ey">Приклади сценаріїв</div>
+  <h2>Як Rules Engine <em>вирішує реальні кейси</em></h2>
+
+  <div class="example-grid">
+    <div class="ex-card">
+      <div class="ex-tag">Кейс 1 · Блокування</div>
+      <div class="ex-scenario">Пацієнт хоче записатись на AlexStar (лазерна епіляція). В анкеті відмітив засмагу 2 тижні тому.</div>
+      <div class="ex-check">Тригер: запис на лазерну процедуру</div>
+      <div class="ex-check">Перевірка L1: засмага за останні 4 тижні → true</div>
+      <div class="ex-check">Правило: laser_after_sunburn → BLOCK</div>
+      <div class="ex-result block">«Лазерну процедуру не рекомендовано протягом 4 тижнів після засмаги. Найближча можлива дата — [дата+2тижні]. Записати вас? Або можемо запропонувати Hydrafacial — без обмежень по засмазі.»</div>
+    </div>
+
+    <div class="ex-card">
+      <div class="ex-tag">Кейс 2 · Approval</div>
+      <div class="ex-scenario">Пацієнтка хоче зробити SMAS через 10 днів після ін'єкцій філерів.</div>
+      <div class="ex-check">Тригер: запис на SMAS Ultraformer</div>
+      <div class="ex-check">Перевірка L1: філери &lt; 14 днів тому → true</div>
+      <div class="ex-check">Правило: fillers_before_smas → APPROVAL_REQUIRED</div>
+      <div class="ex-result approval">«Після ін'єкцій філерів рекомендований інтервал до SMAS — 14 днів. Ви хочете щоб ми уточнили у лікаря чи можна раніше? Лікар відповість протягом [час].»</div>
+    </div>
+
+    <div class="ex-card">
+      <div class="ex-tag">Кейс 3 · Дозвіл + рекомендація</div>
+      <div class="ex-scenario">Пацієнт щойно зробив Nordlys постакне і питає чи можна додати Healite II сьогодні.</div>
+      <div class="ex-check">Тригер: запит на Healite II після лазеру</div>
+      <div class="ex-check">Перевірка L1: healite_after_laser → ALLOW + RECOMMENDED</div>
+      <div class="ex-check">Правило: Healite сумісна, прискорює загоєння</div>
+      <div class="ex-result">«Healite II відмінно поєднується з Nordlys — прискорює загоєння і знімає запалення. Можна зробити одразу після лазеру. Додати до вашого сьогоднішнього сеансу?»</div>
+    </div>
+
+    <div class="ex-card">
+      <div class="ex-tag">Кейс 4 · Персональна історія</div>
+      <div class="ex-scenario">Пацієнт записується на Endymed, але 3 місяці тому повідомляв про сильний набряк після цієї самої процедури.</div>
+      <div class="ex-check">Тригер: запис на Endymed Intensif</div>
+      <div class="ex-check">Перевірка L4: попередня реакція → true</div>
+      <div class="ex-check">Правило: previous_reaction_flag → APPROVAL_REQUIRED</div>
+      <div class="ex-result approval">«Під час попереднього сеансу ви повідомляли про нетипову реакцію. Ми надіслали запит лікарю — він підтвердить або запропонує консультацію перед процедурою.»</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- COST -->
+<div class="section--alt" id="cost">
+<div class="wrap">
+  <div class="ey--g ey">Вартість розробки</div>
+  <h2>Скільки коштує <em>реально</em></h2>
+  <p class="lead">Три сценарії залежно від команди. Без прикрас.</p>
+
+  <table class="cost-table">
+    <thead>
+      <tr>
+        <th>Компонент</th>
+        <th>Ти + 1 сильний dev</th>
+        <th>Аутсорс команда</th>
+        <th>Повна платформа</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Telegram Bot (нагадування, трекер, запис)</td>
+        <td class="cost-val">$0 + час</td>
+        <td class="cost-val">$5–12K</td>
+        <td class="cost-val">$5–12K</td>
+      </tr>
+      <tr>
+        <td>Admin Portal (Action Inbox, записи, аналітика)</td>
+        <td class="cost-val">$0 + час</td>
+        <td class="cost-val">$8–18K</td>
+        <td class="cost-val">$10–20K</td>
+      </tr>
+      <tr>
+        <td>Doctor Portal (картки, approval, adherence)</td>
+        <td class="cost-val">$0 + час</td>
+        <td class="cost-val">$6–12K</td>
+        <td class="cost-val">$8–15K</td>
+      </tr>
+      <tr>
+        <td>Patient Portal (трекер, аналізи, фото, план)</td>
+        <td class="cost-val">$0 + час</td>
+        <td class="cost-val">$8–15K</td>
+        <td class="cost-val">$10–20K</td>
+      </tr>
+      <tr>
+        <td>AI парсинг плану лікаря (Claude API)</td>
+        <td class="cost-val">$50–200/міс</td>
+        <td class="cost-val">$5–12K setup</td>
+        <td class="cost-val">$5–12K setup</td>
+      </tr>
+      <tr>
+        <td>Rules Engine MVP (топ-10 правил)</td>
+        <td class="cost-val">$0 + час</td>
+        <td class="cost-val">$5–12K</td>
+        <td class="cost-val">$8–18K повний</td>
+      </tr>
+      <tr>
+        <td>Безпека (Proton Drive, S3, auth, GDPR)</td>
+        <td class="cost-val">$50–150/міс</td>
+        <td class="cost-val">$3–6K</td>
+        <td class="cost-val">$5–10K</td>
+      </tr>
+      <tr>
+        <td>Big Data аналітика (дашборд власника)</td>
+        <td class="cost-val">Phase 2</td>
+        <td class="cost-val">Phase 2</td>
+        <td class="cost-val">$15–35K</td>
+      </tr>
+      <tr>
+        <td>IoT датчики на шафі</td>
+        <td class="cost-val">Phase 3</td>
+        <td class="cost-val">Phase 3</td>
+        <td class="cost-val">$8–20K</td>
+      </tr>
+      <tr>
+        <td>QA, DevOps, інфра</td>
+        <td class="cost-val">$100–300/міс</td>
+        <td class="cost-val">$3–6K</td>
+        <td class="cost-val">$5–12K</td>
+      </tr>
+      <tr>
+        <td><strong>РАЗОМ · ТЕРМІН</strong></td>
+        <td><div class="cost-total">$200–600/міс</div><div style="font-size:12px;color:rgba(255,255,255,.4);margin-top:4px">3–4 міс MVP<br>+ зарплата dev</div></td>
+        <td><div class="cost-total">$40–75K</div><div style="font-size:12px;color:rgba(255,255,255,.4);margin-top:4px">4–7 місяців</div></td>
+        <td><div class="cost-total">$80–180K</div><div style="font-size:12px;color:rgba(255,255,255,.4);margin-top:4px">10–18 місяців</div></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div style="background:rgba(61,122,82,.08);border:1px solid rgba(61,122,82,.2);border-left:3px solid var(--gb);padding:20px 24px;margin-top:16px">
+    <div style="font-size:12px;font-weight:600;color:var(--gb);margin-bottom:8px">Чесна порада</div>
+    <div style="font-size:13px;color:var(--muted);line-height:1.65">З командою 2 людини (ти + dev) реальна вартість — <strong style="color:var(--ink)">ваш час і ~$200–600/міс</strong> операційних витрат. MVP який приносить перших платних клієнтів — <strong style="color:var(--ink)">3–4 місяці</strong>. Big Data і IoT — це Phase 3, не MVP. Не треба будувати все одразу. Перший клієнт покаже що насправді важливо.</div>
+  </div>
+</div>
+</div>
+
+<div class="closing">
+  <p class="closing-q">Rules Engine — це не AI.<br><em>Це ваші правила, виконані точно.</em></p>
+  <div class="closing-sub">Care Assistant · Rules Engine · Травень 2026</div>
+</div>
+
+</body>
+</html>

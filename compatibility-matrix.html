@@ -1,0 +1,1421 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Матриця сумісності процедур — Revive Clinic</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0e0f0b;--surface:#141510;--surface2:#1a1c15;
+  --ink:#f0ede6;--muted:rgba(240,237,230,.45);--dim:rgba(240,237,230,.2);
+  --border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.12);
+  --green:#3d7a52;--gb:#5aaa70;--gp:rgba(61,122,82,.2);
+  --red:#c05050;--rp:rgba(192,80,80,.2);
+  --amber:#d4913a;--ap:rgba(212,145,58,.2);
+  --blue:#4a7eb5;--bp:rgba(74,126,181,.2);
+  --same:rgba(255,255,255,.06);
+  --mono:'JetBrains Mono',monospace;
+}
+html{scroll-behavior:smooth}
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--ink);font-size:13px;line-height:1.5;min-height:100vh}
+
+/* HEADER */
+.hdr{background:var(--surface);border-bottom:1px solid var(--border);padding:20px 32px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;position:sticky;top:0;z-index:100}
+.hdr-left h1{font-size:17px;font-weight:600;color:var(--ink);margin-bottom:3px}
+.hdr-left p{font-size:11px;color:var(--muted)}
+.draft-tag{background:var(--amber);color:#fff;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;padding:5px 12px;flex-shrink:0;margin-top:2px}
+
+/* INSTRUCTIONS */
+.instr{background:rgba(212,145,58,.08);border-bottom:1px solid rgba(212,145,58,.2);padding:12px 32px;display:flex;gap:10px;align-items:flex-start}
+.instr p{font-size:12px;color:var(--muted);line-height:1.6}
+.instr strong{color:var(--amber)}
+
+/* LEGEND */
+.legend{padding:12px 32px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;gap:20px;flex-wrap:wrap;align-items:center}
+.leg-item{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted)}
+.leg-cell{width:36px;height:24px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;font-weight:600;border-radius:3px}
+.leg-ok{background:var(--gp);color:var(--gb)}
+.leg-warn{background:var(--ap);color:var(--amber)}
+.leg-no{background:var(--rp);color:var(--red)}
+.leg-x{background:var(--same);color:var(--dim)}
+
+/* CONTROLS */
+.controls{padding:10px 32px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ctrl-label{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-right:4px}
+.ctrl-btn{font-size:11px;font-weight:500;padding:4px 12px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;border-radius:2px;transition:all .15s}
+.ctrl-btn:hover,.ctrl-btn.active{background:var(--ink);color:#000;border-color:var(--ink)}
+.ctrl-btn.active{background:var(--gb);color:#fff;border-color:var(--gb)}
+
+.dashboard-row{display:grid;grid-template-columns:repeat(4,minmax(140px,1fr));gap:12px;padding:20px 32px;background:var(--surface);border-bottom:1px solid var(--border);}
+.dashboard-card{padding:14px 18px;border:1px solid var(--border2);background:var(--surface2);border-radius:6px}
+.dashboard-num{font-size:28px;font-weight:700;color:var(--ink);margin-bottom:6px}
+.dashboard-label{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.dashboard-note{font-size:11px;color:var(--dim);margin-top:6px}
+
+.flow-panel{padding:14px 32px 24px;background:rgba(61,122,82,.05);border-bottom:1px solid rgba(61,122,82,.15);display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.flow-step{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:16px}
+.flow-step h4{font-size:12px;font-weight:700;text-transform:uppercase;color:var(--gb);margin-bottom:10px}
+.flow-step p{font-size:12px;color:var(--muted);line-height:1.6}
+.flow-step .flow-tag{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:700;text-transform:uppercase;padding:4px 8px;border-radius:999px}
+.flow-step .auto{background:rgba(90,170,112,.15);color:var(--gb)}
+.flow-step .human{background:rgba(212,145,58,.15);color:var(--amber)}
+
+.rules-fit{display:grid;grid-template-columns:1fr;gap:12px;padding:18px 32px 24px;background:var(--surface);border-bottom:1px solid var(--border)}
+.rules-fit h3{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:10px}
+.rules-fit p{font-size:12px;color:var(--muted);line-height:1.6}
+.rules-banner{padding:14px 32px;background:rgba(212,145,58,.08);border-top:1px solid rgba(212,145,58,.2);border-bottom:1px solid rgba(212,145,58,.2);display:flex;gap:12px;align-items:flex-start}
+.rules-banner span{font-size:14px}
+.rules-banner p{font-size:12px;color:var(--muted);line-height:1.6;max-width:960px}
+
+.intent-panel{padding:24px 32px;background:var(--surface2);border-bottom:1px solid var(--border);display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.intent-card{background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:18px}
+.intent-card h4{font-size:12px;font-weight:700;text-transform:uppercase;color:var(--gb);margin-bottom:10px}
+.intent-card p{font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:10px}
+.intent-list{list-style:none;padding-left:0;display:grid;gap:6px}
+.intent-list li{font-size:12px;color:var(--muted)}
+
+.badge-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+.badge{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:4px 9px;border-radius:999px;border:1px solid var(--border2)}
+.badge.ai{background:rgba(74,126,181,.12);color:var(--blue)}
+.badge.doctor{background:rgba(212,145,58,.12);color:var(--amber)}
+.badge.approved{background:rgba(61,122,82,.12);color:var(--gb)}
+.badge.draft{background:rgba(255,255,255,.05);color:var(--muted)}
+
+.modal-extra{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.modal-extra label{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:6px}
+.modal-extra select,.modal-extra input{background:var(--surface2);border:1px solid var(--border);color:var(--ink);font-family:'Outfit',sans-serif;font-size:13px;padding:8px 10px;width:100%;outline:none}
+.modal-extra textarea{background:var(--surface2);border:1px solid var(--border);color:var(--muted);font-family:'Outfit',sans-serif;font-size:12px;padding:8px 10px;width:100%;resize:vertical;min-height:60px;outline:none}
+.modal-row{display:flex;gap:12px;flex-wrap:wrap}
+.modal-row > div{flex:1}
+
+@media(max-width:700px){
+  .dashboard-row,.flow-panel,.rules-fit,.intent-panel{grid-template-columns:1fr}
+  .modal-extra{grid-template-columns:1fr}
+}
+
+/* MATRIX WRAPPER */
+.matrix-wrap{overflow:auto;padding:24px 32px 60px}
+
+/* MATRIX TABLE */
+.mt{border-collapse:collapse;min-width:max-content}
+
+/* CORNER */
+.mt .corner{background:var(--surface);border:1px solid var(--border);padding:8px 12px;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);white-space:nowrap;position:sticky;left:0;top:0;z-index:20}
+
+/* COLUMN HEADERS */
+.mt .col-hdr{background:var(--surface);border:1px solid var(--border);padding:8px 10px 8px;font-size:11px;font-weight:500;color:var(--muted);text-align:center;white-space:nowrap;min-width:76px;vertical-align:bottom;position:sticky;top:0;z-index:15}
+.mt .col-hdr .ch-text{writing-mode:vertical-rl;transform:rotate(180deg);display:inline-block;max-height:120px;overflow:hidden;font-size:10px;line-height:1.3}
+.mt .col-hdr .ch-cat{font-size:9px;font-weight:400;color:var(--dim);display:block;margin-top:4px;writing-mode:vertical-rl;transform:rotate(180deg)}
+
+/* ROW HEADERS */
+.mt .row-hdr{background:var(--surface);border:1px solid var(--border);padding:8px 12px;font-size:11px;font-weight:500;color:var(--muted);white-space:nowrap;position:sticky;left:0;z-index:10;min-width:160px}
+.mt .row-hdr .rh-cat{font-size:9px;font-weight:400;color:var(--dim);display:block;margin-bottom:1px}
+
+/* CELLS */
+.mt .cell{border:1px solid var(--border);text-align:center;padding:0;cursor:pointer;position:relative;min-width:76px;height:40px}
+.mt .cell.same{background:var(--same);cursor:default}
+.mt .cell.ok{background:var(--gp)}
+.mt .cell.ok:hover{background:rgba(61,122,82,.35)}
+.mt .cell.warn{background:var(--ap)}
+.mt .cell.warn:hover{background:rgba(212,145,58,.35)}
+.mt .cell.no{background:var(--rp)}
+.mt .cell.no:hover{background:rgba(192,80,80,.35)}
+.mt .cell.approval{background:rgba(74,126,181,.2)}
+.mt .cell.approval:hover{background:rgba(74,126,181,.35)}
+
+.cell-val{font-family:var(--mono);font-size:11px;font-weight:600;display:block;line-height:1}
+.cell-val.ok{color:var(--gb)}
+.cell-val.warn{color:var(--amber)}
+.cell-val.no{color:var(--red)}
+.cell-val.approval{color:var(--blue)}
+.cell-val.same{color:var(--dim)}
+
+/* EDIT TOOLTIP */
+.mt .cell:not(.same):hover::after{
+  content:'клік — редагувати';
+  position:absolute;top:-28px;left:50%;transform:translateX(-50%);
+  background:rgba(0,0,0,.85);color:var(--muted);font-size:9px;
+  padding:3px 7px;border-radius:2px;white-space:nowrap;pointer-events:none;z-index:30;
+  font-family:'Outfit',sans-serif;
+}
+
+/* MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:none;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border2);padding:28px 32px;max-width:480px;width:90%;position:relative}
+.modal h3{font-size:15px;font-weight:600;color:var(--ink);margin-bottom:4px}
+.modal .modal-sub{font-size:12px;color:var(--muted);margin-bottom:20px}
+.modal-opts{display:flex;flex-direction:column;gap:8px;margin-bottom:20px}
+.modal-opt{display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid var(--border);cursor:pointer;transition:all .15s;background:var(--surface2)}
+.modal-opt:hover{border-color:var(--border2)}
+.modal-opt.selected{border-color:var(--gb)}
+.modal-opt-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.modal-opt-label{font-size:13px;color:var(--ink);font-weight:500}
+.modal-opt-desc{font-size:11px;color:var(--muted)}
+.modal-days{margin-bottom:20px}
+.modal-days label{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:8px}
+.modal-days input{background:var(--surface2);border:1px solid var(--border2);color:var(--ink);font-family:'Outfit',sans-serif;font-size:14px;padding:8px 12px;width:120px;outline:none}
+.modal-days input:focus{border-color:var(--gb)}
+.modal-note{margin-bottom:20px}
+.modal-note label{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:8px}
+.modal-note textarea{background:var(--surface2);border:1px solid var(--border);color:var(--muted);font-family:'Outfit',sans-serif;font-size:12px;padding:8px 12px;width:100%;resize:none;height:60px;outline:none}
+.modal-note textarea:focus{border-color:var(--gb)}
+.modal-btns{display:flex;gap:10px;justify-content:flex-end}
+.modal-btn{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:8px 20px;border:none;cursor:pointer;transition:all .15s}
+.modal-btn.save{background:var(--gb);color:#fff}
+.modal-btn.save:hover{background:var(--green)}
+.modal-btn.cancel{background:transparent;border:1px solid var(--border2);color:var(--muted)}
+.modal-btn.cancel:hover{color:var(--ink)}
+.modal-close{position:absolute;top:12px;right:16px;background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer}
+.modal-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:0 -8px 16px;}
+.modal-tab{padding:8px 12px;border:1px solid var(--border);border-radius:999px;background:var(--surface2);font-size:12px;color:var(--muted);cursor:pointer;transition:all .15s}
+.modal-tab.active{background:var(--gb);border-color:var(--gb);color:#fff}
+.modal-panel{display:none;gap:16px}
+.modal-panel.active{display:block}
+.modal-section{margin-bottom:18px}
+.modal-section label{display:block;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.modal-section textarea{background:var(--surface2);border:1px solid var(--border);color:var(--muted);font-family:'Outfit',sans-serif;font-size:12px;padding:10px 12px;width:100%;resize:vertical;min-height:80px;outline:none}
+.modal-checkbox{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted);margin-bottom:18px}
+.modal-checkbox input{width:16px;height:16px}
+
+/* CAT SEPARATOR ROW */
+.mt .cat-sep td{background:rgba(255,255,255,.04);padding:5px 12px;font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--dim);border-bottom:1px solid var(--border)}
+
+/* NOTES PANEL */
+.notes-panel{margin:0 32px 40px;background:var(--surface);border:1px solid var(--border);padding:20px 24px}
+.np-title{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
+.np-list{display:flex;flex-direction:column;gap:6px;max-height:200px;overflow-y:auto}
+.np-item{font-size:12px;color:var(--muted);display:flex;gap:10px;padding:6px 10px;background:var(--surface2);border-left:2px solid var(--gb)}
+.np-pair{font-weight:600;color:var(--ink);flex-shrink:0}
+.np-empty{font-size:12px;color:var(--dim);font-style:italic}
+
+/* EXPORT BTN */
+.export-bar{padding:16px 32px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.export-bar p{font-size:11px;color:var(--dim)}
+.export-btns{display:flex;gap:8px}
+.exp-btn{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:8px 16px;border:none;cursor:pointer}
+.exp-btn.print{background:var(--surface2);color:var(--muted);border:1px solid var(--border2)}
+.exp-btn.copy{background:var(--gb);color:#fff}
+
+@media(max-width:700px){
+  .hdr,.instr,.legend,.controls,.matrix-wrap,.notes-panel,.export-bar{padding-left:16px;padding-right:16px}
+  .hdr{flex-direction:column;gap:8px;position:static}
+  .mt .cell{min-width:52px}
+  .mt .row-hdr{min-width:110px;font-size:10px}
+}
+@media print{
+  .hdr{position:static}
+  .controls,.export-bar,.modal-bg{display:none!important}
+  body{background:#fff;color:#000}
+  .mt .cell.ok{background:#d4edda!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .mt .cell.no{background:#f8d7da!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .mt .cell.warn{background:#fff3cd!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-left">
+    <h1>Матриця сумісності процедур — Revive Clinic</h1>
+    <p>Care Assistant · Чернетка для перегляду і підтвердження лікарями · Травень 2026</p>
+  </div>
+  <span class="draft-tag">⚠ Чернетка</span>
+</div>
+
+<!-- INSTRUCTIONS -->
+<div class="instr">
+  <span style="font-size:16px">📋</span>
+  <p><strong>Для лікарів клініки:</strong> перегляньте кожну клітинку. Число = мінімум днів між процедурами. <strong>0д = можна в один день.</strong>
+  Натисніть на будь-яку клітинку щоб змінити значення або залишити нотатку.
+  Матриця симетрична — зміна одного боку оновлює обидва.
+  <strong>Після підтвердження — ця таблиця стає основою Rules Engine.</strong></p>
+</div>
+
+<div class="rules-fit">
+  <h3>Що таке Rules Engine?</h3>
+  <p>Це детермінований механізм, де AI виконує лише парсинг запиту, а рішення приймаються за правилами клініки. Лікарі підтверджують комбінації процедур, індикції та протипоказання, щоб забезпечити безпечні автоматичні бронювання.</p>
+</div>
+
+<div class="progress-shell" id="progressShell">
+  <div class="progress-meta">
+    <span class="progress-label">Прогрес заповнення правил</span>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+  </div>
+  <div class="progress-counts" id="progressCounts"></div>
+</div>
+
+<div class="filter-search">
+  <input type="text" class="search-input" id="searchInput" placeholder="Пошук процедури..." oninput="applyFilter()">
+  <button class="ctrl-btn" onclick="highlightMode('needs_review',this)">Needs review</button>
+  <button class="ctrl-btn" onclick="highlightMode('indications_verify',this)">Has indications</button>
+  <button class="ctrl-btn" onclick="highlightMode('approved',this)">Approved</button>
+  <button class="ctrl-btn" onclick="highlightMode('all',this)">All</button>
+</div>
+
+<!-- LEGEND -->
+<div class="legend">
+  <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin-right:4px">Легенда:</span>
+  <div class="leg-item"><div class="leg-cell leg-ok">0д</div>Можна в один день</div>
+  <div class="leg-item"><div class="leg-cell leg-ok">7д</div>Інтервал N днів</div>
+  <div class="leg-item"><div class="leg-cell leg-warn">?</div>Потребує рішення лікаря</div>
+  <div class="leg-item"><div class="leg-cell leg-no">✗</div>Не поєднувати ніколи</div>
+  <div class="leg-item"><div class="leg-cell leg-x">×</div>Та сама процедура</div>
+</div>
+
+<!-- CONTROLS -->
+<div class="controls">
+  <span class="ctrl-label">Показати:</span>
+  <button class="ctrl-btn active" onclick="highlightMode('all',this)">Всі</button>
+  <button class="ctrl-btn" onclick="highlightMode('conflicts',this)">Тільки блокування</button>
+  <button class="ctrl-btn" onclick="highlightMode('sameday',this)">В один день</button>
+  <button class="ctrl-btn" onclick="highlightMode('unknown',this)">Потребують лікаря</button>
+  <button class="ctrl-btn" onclick="highlightMode('reviewed',this)">Edited</button>
+  <button class="ctrl-btn" onclick="highlightMode('approved',this)">Approved</button>
+  <button class="ctrl-btn" onclick="highlightMode('lowconf',this)">Low confidence</button>
+</div>
+
+<div class="dashboard-row" id="dashboardRow">
+  <div class="dashboard-card"><div class="dashboard-num" id="countApproved">0</div><div class="dashboard-label">Approved rules</div><div class="dashboard-note">Автобронювання доступне тільки для Approved.</div></div>
+  <div class="dashboard-card"><div class="dashboard-num" id="countDraft">0</div><div class="dashboard-label">Draft / AI draft</div><div class="dashboard-note">Потребують перегляду лікаря.</div></div>
+  <div class="dashboard-card"><div class="dashboard-num" id="countLowConf">0</div><div class="dashboard-label">Low confidence</div><div class="dashboard-note">Перевірити перед автоматизацією.</div></div>
+  <div class="dashboard-card"><div class="dashboard-num" id="countUnknown">0</div><div class="dashboard-label">Unknown / review</div><div class="dashboard-note">За замовчуванням — направити на approval.</div></div>
+</div>
+
+<div class="flow-panel">
+  <div class="flow-step"><h4>1. Інтенція</h4><p>AI parses a patient request into a structured intent, then maps it to procedure labels and patient status. Ambiguous or high-risk terms route to doctor review.</p><span class="flow-tag human">AI parse</span></div>
+  <div class="flow-step"><h4>2. Перевірка правил</h4><p>Кожна пара процедур має rule node. Approved rules can auto-book; all others require doctor review or confirmation.</p><span class="flow-tag auto">Rules Engine</span></div>
+  <div class="flow-step"><h4>3. Контекст</h4><p>New patients always require intake and doctor approval. Existing patients use history, adherence, treatment plan and approved rules.</p><span class="flow-tag human">Patient history</span></div>
+  <div class="flow-step"><h4>4. Результат</h4><p>ALLOW / WARN / BLOCK / APPROVAL_REQUIRED. Public messages include only patient IDs and procedure labels.</p><span class="flow-tag auto">Decision</span></div>
+</div>
+
+<div class="rules-fit">
+  <h3>Як ця матриця вписується у patient journey</h3>
+  <p>Матриця є ядром Rules Engine. Вона відповідає за перевірку медичних комбінацій, інтервалів і ескалацію. У journey це відбувається після парсингу запиту ботом і перед остаточною бронею.</p>
+  <div class="badge-row">
+    <span class="badge ai">AI draft</span>
+    <span class="badge doctor">Doctor review</span>
+    <span class="badge approved">Approved</span>
+    <span class="badge">Secure storage</span>
+  </div>
+</div>
+
+<div class="intent-panel">
+  <div class="intent-card">
+    <h4>Intent normalisation</h4>
+    <p>Повідомлення пацієнта перетворюються на структуровані інтенції. Це дає змогу визначити, які процедури та статус пацієнта запитуються.</p>
+    <ul class="intent-list">
+      <li>"Хочу ботус" → intent: inject / procedure: Botox</li>
+      <li>"Після філерів можна лазер?" → intent: schedule / procedure: Laser</li>
+      <li>"Що мені далі робити?" → intent: follow_up / physician_review</li>
+      <li>"Запис на Nordlys" → intent: book / procedure: Nordlys</li>
+    </ul>
+  </div>
+  <div class="intent-card">
+    <h4>Synonym map</h4>
+    <p>Синоніми та високий ризик обробляються окремо. Якщо AI не впевнений — правило переходить на review.</p>
+    <ul class="intent-list">
+      <li>ботокс, ботулін, Dysport, Xeomin</li>
+      <li>лазер, Nordlys, Clarity</li>
+      <li>філери, контурна пластика</li>
+      <li>пілінг, Dermapen, Healite</li>
+      <li>"сонце", "засмага", "в солярій" → doctor review</li>
+    </ul>
+  </div>
+</div>
+
+<!-- MATRIX -->
+<div class="matrix-wrap statused-row">
+<table class="mt" id="matrixTable">
+<thead id="matrixHead"></thead>
+<tbody id="matrixBody"></tbody>
+</table>
+</div>
+
+<!-- NOTES PANEL -->
+<div class="notes-panel">
+  <div class="np-title">📝 Нотатки лікарів до клітинок</div>
+  <div class="np-list" id="notesList"><div class="np-empty">Натисніть на клітинку щоб залишити нотатку</div></div>
+</div>
+
+<!-- EXPORT -->
+<div class="export-bar">
+  <p>Revive Clinic · Матриця сумісності · Care Assistant · Чернетка — не є фінальною версією</p>
+  <div class="export-btns">
+    <button class="exp-btn print" onclick="window.print()">🖨 Роздрукувати</button>
+    <button class="exp-btn copy" onclick="copyMatrix()">📋 Скопіювати як текст</button>
+    <button class="exp-btn copy" onclick="downloadJson()">🔐 Export JSON</button>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <h3 id="modalTitle">Редагувати</h3>
+    <div class="modal-sub" id="modalSub"></div>
+    <div class="modal-tabs">
+      <div class="modal-tab active" onclick="switchModalTab(event,'compatibilityTab')">Compatibility</div>
+      <div class="modal-tab" onclick="switchModalTab(event,'medicalTab')">Indications / Contra</div>
+      <div class="modal-tab" onclick="switchModalTab(event,'notesTab')">Notes & Questions</div>
+      <div class="modal-tab" onclick="switchModalTab(event,'exceptionsTab')">Exceptions & Actions</div>
+    </div>
+    <div class="modal-panel active" id="compatibilityTab">
+      <div class="modal-guide">Вкажіть базове правило: чи можна поєднувати процедури, за який час і чи потрібне узгодження лікаря.</div>
+      <div class="modal-opts" id="modalOpts">
+      <div class="modal-opt" data-val="ok" onclick="selectOpt(this)">
+        <div class="modal-opt-dot" style="background:var(--gb)"></div>
+        <div>
+          <div class="modal-opt-label">Можна (вкажіть кількість днів)</div>
+          <div class="modal-opt-desc">0 = в один день, 7 = через 7 днів</div>
+        </div>
+      </div>
+      <div class="modal-opt" data-val="warn" onclick="selectOpt(this)">
+        <div class="modal-opt-dot" style="background:var(--amber)"></div>
+        <div>
+          <div class="modal-opt-label">Потребує рішення лікаря</div>
+          <div class="modal-opt-desc">Залежить від ситуації — approval flow</div>
+        </div>
+      </div>
+      <div class="modal-opt" data-val="no" onclick="selectOpt(this)">
+        <div class="modal-opt-dot" style="background:var(--red)"></div>
+        <div>
+          <div class="modal-opt-label">Не поєднувати</div>
+          <div class="modal-opt-desc">Завжди блокувати комбінацію</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-days" id="modalDaysBlock">
+      <label>Мінімум днів між процедурами</label>
+      <input type="number" id="modalDaysInput" min="0" max="365" value="0" placeholder="днів">
+    </div>
+
+      <div class="modal-extra">
+        <div>
+        <label>Статус правила</label>
+        <select id="modalStatusSelect">
+          <option value="ai_draft">AI Draft</option>
+          <option value="reviewed">Reviewed</option>
+          <option value="approved">Approved</option>
+        </select>
+      </div>
+      <div>
+        <label>Джерело</label>
+        <select id="modalSourceSelect">
+          <option value="ai">AI</option>
+          <option value="doctor">Doctor</option>
+        </select>
+      </div>
+      <div>
+        <label>Пріоритет</label>
+        <select id="modalPrioritySelect">
+          <option value="L1">L1</option>
+          <option value="L2">L2</option>
+          <option value="L3">L3</option>
+          <option value="L4">L4</option>
+        </select>
+      </div>
+      <div>
+        <label>Довіра %</label>
+        <input type="number" id="modalConfidenceInput" min="0" max="100" value="70">
+      </div>
+      </div>
+    </div>
+    <div class="modal-panel" id="medicalTab">
+      <div class="modal-guide">Перевірте чи індикції та протипоказання відповідають цим процедурам. Це допомагає боту попередньо скринити пацієнтів перед бронюванням.</div>
+      <div class="modal-section">
+        <label>Індикції</label>
+        <textarea id="modalIndicationsInput" placeholder="Перелік показань..."></textarea>
+      </div>
+      <div class="modal-section">
+        <label>Протипоказання</label>
+        <textarea id="modalContraindicationsInput" placeholder="Перелік протипоказань..."></textarea>
+      </div>
+      <div class="modal-checkbox">
+        <input type="checkbox" id="modalConfirmMedical"> <label for="modalConfirmMedical">Я підтверджую ці індикції / протипоказання</label>
+      </div>
+    </div>
+    <div class="modal-panel" id="notesTab">
+      <div class="modal-guide">Записуйте внутрішні нотатки та медичні питання, які система може поставити пацієнту або доктору.</div>
+      <div class="modal-section">
+        <label>Нотатка лікаря</label>
+        <textarea id="modalNoteInput" placeholder="Наприклад: залежить від зони, доза, індивідуально..."></textarea>
+      </div>
+      <div class="modal-section">
+        <label>Запитання пацієнту</label>
+        <textarea id="modalQuestionInput" placeholder="Наприклад: Чи є набряк? Чи була засмага?"></textarea>
+      </div>
+    </div>
+    <div class="modal-panel" id="exceptionsTab">
+      <div class="modal-guide">Уточніть винятки, дії та повідомлення для різних ролей системи.</div>
+      <div class="modal-section">
+        <label>Винятки / примітки</label>
+        <textarea id="modalExceptionsInput" placeholder="Наприклад: дозволено при моніторингу лікаря, окрема зона..."></textarea>
+      </div>
+      <div class="modal-section">
+        <label>Повідомлення для пацієнта</label>
+        <textarea id="modalMessageInput" placeholder="Наприклад: За результатами перевірки необхідно схвалення лікаря."></textarea>
+      </div>
+      <div class="modal-section">
+        <label>Повідомлення для адміністратора / лікаря</label>
+        <textarea id="modalAdminMessageInput" placeholder="Наприклад: Терміновий перегляд заявки лікарем..."></textarea>
+      </div>
+    </div>
+
+    <div class="modal-btns">
+      <button class="modal-btn cancel" onclick="closeModal()">Скасувати</button>
+      <button class="modal-btn save" onclick="saveCell()">Зберегти</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── PROCEDURES DATA ───────────────────────────────────────────────────────────
+const PROCS = [];
+let N = 0;
+const STATE_KEY = 'revive_rules_state';
+
+function slugify(text) {
+  return text.toLowerCase().replace(/[^a-zа-яёєії0-9]+/gi, '_').replace(/^_+|_+$/g, '').substring(0, 60);
+}
+
+function extractPrice(line) {
+  const match = line.match(/–\s*(.+)$|—\s*(.+)$|\-\s*(.+)$/);
+  return match ? (match[1] || match[2] || match[3] || '').trim() : '';
+}
+
+function inferCategory(label) {
+  const text = label.toLowerCase();
+  if (/консультац|діагност|visia|дерматоскоп|узі|consult|diagnos/.test(text)) return 'Consultation / Diagnostics';
+  if (/ботул|botox|dysport|xeomin|гіпергідроз|hyperhidrosis|мигрень/.test(text)) return 'Injection / Neuromodulator';
+  if (/філер|контур|fillers|juvederm|belotero|restylane|hyal/.test(text)) return 'Dermal Fillers';
+  if (/лазер|nordlys|clarity|alexstar|епіляц|епиляц|epilation/.test(text)) return 'Laser';
+  if (/hydrafacial|aquapure|healite|dermapen|endymed|ultraformer|emsculpt|emtone|icoone|endosphere|micro|rf|phototherapy/.test(text)) return 'Device Procedure';
+  if (/hair|епіляц|лазерна епіляція|laser hair/.test(text)) return 'Laser Hair Removal';
+  return 'General Procedure';
+}
+
+function inferDevice(label) {
+  return /hydrafacial|aquapure|healite|dermapen|endymed|ultraformer|emsculpt|emtone|icoone|endosphere|visia|dermatoscop|uzi|alexstar|nordlys|clarity/.test(label.toLowerCase());
+}
+
+function inferInvasive(label) {
+  return /ботул|botox|філер|контур|dermapen|мікроні|мікрогол|лазер|епіляц|пілінг|inject|fillers/.test(label.toLowerCase());
+}
+
+function inferConsultation(label) {
+  return /консультац|діагност|visia|дерматоскоп|узі|consult|diagnos|botox|fillers|лазер|nordlys|alexstar/.test(label.toLowerCase());
+}
+
+function parseProcedureLine(line) {
+  const trimmed = line.trim();
+  if (!trimmed) return null;
+  const parts = trimmed.split(/–|—| - |—/).map(part => part.trim()).filter(Boolean);
+  const price = extractPrice(trimmed);
+  const label = parts[0] || trimmed;
+  return {
+    id: slugify(label),
+    label,
+    category: inferCategory(label),
+    device: inferDevice(label),
+    price: price || '',
+    invasive: inferInvasive(label),
+    requires_consultation: inferConsultation(label),
+  };
+}
+
+async function loadProcedures() {
+  try {
+    const response = await fetch('revive_procedures.txt');
+    const text = await response.text();
+    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    const parsed = lines.map(parseProcedureLine).filter(Boolean);
+    PROCS.length = 0;
+    PROCS.push(...parsed);
+    N = PROCS.length;
+    initMatrix();
+    loadSavedState();
+    renderMatrix();
+  } catch (error) {
+    console.error('Cannot load revive_procedures.txt:', error);
+    alert('Не вдалося завантажити список процедур. Перевірте revive_procedures.txt.');
+  }
+}
+
+function loadSavedState() {
+  const saved = localStorage.getItem(STATE_KEY);
+  if (!saved) return;
+  try {
+    const state = JSON.parse(saved);
+    if (state && Array.isArray(state.rules)) {
+      state.rules.forEach(rule => {
+        const key = [rule.procedure_a_id, rule.procedure_b_id].sort().join('_');
+        const noteText = rule.doctor_note || rule.notes || rule.ai_note || '';
+        if (noteText) notes[key] = noteText;
+        RULE_META[key] = {
+          ...(RULE_META[key] || {}),
+          status: rule.approval_status || 'ai_draft',
+          source: rule.source || 'ai',
+          priority: rule.priority_level || 'L3',
+          confidence: rule.confidence != null ? rule.confidence : 60,
+          notes: rule.doctor_note || rule.ai_note || rule.internal_note || '',
+          patient_questions: rule.patient_questions || [],
+          exceptions: rule.exceptions || '',
+          bot_message: rule.bot_message || '',
+          admin_message: rule.admin_message || '',
+          doctor_message: rule.doctor_message || '',
+          indications: rule.indications || [],
+          contraindications: rule.contraindications || [],
+          confirmed_medical: rule.confirmed_medical || false,
+          audit: rule.audit || RULE_META[key]?.audit || {},
+        };
+      });
+    }
+  } catch (err) {
+    console.error('Failed to parse saved rule state', err);
+  }
+}
+
+function saveState() {
+  buildRules();
+  const payload = {
+    clinic: 'Revive Clinic',
+    version: 'draft-v1',
+    generated_at: new Date().toISOString(),
+    procedures: PROCS.map(proc => ({ ...proc })),
+    rules: RULES.map(rule => ({
+      ...rule,
+      approval_status: rule.status,
+      priority_level: rule.priority,
+      ai_note: rule.ai_note || '',
+      doctor_note: rule.notes || '',
+      internal_note: rule.internal_note || '',
+      indications: rule.indications || [],
+      contraindications: rule.contraindications || [],
+      bot_message: rule.bot_message || '',
+      admin_message: rule.admin_message || '',
+      doctor_message: rule.doctor_message || '',
+    })),
+    intent_dictionary: INTENT_DICTIONARY,
+    decision_logic: DECISION_LOGIC,
+    dashboard_stats: {
+      approved: RULES.filter(r => r.status === 'approved').length,
+      draft: RULES.filter(r => r.status === 'ai_draft').length,
+      reviewed: RULES.filter(r => r.status === 'reviewed').length,
+      low_confidence: RULES.filter(r => r.confidence < 60).length,
+    },
+  };
+  localStorage.setItem(STATE_KEY, JSON.stringify(payload));
+  attemptRemoteSave(payload);
+}
+
+function attemptRemoteSave(state) {
+  fetch('http://localhost:3000/save-rules', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(state),
+  }).then(resp => {
+    if (!resp.ok) throw new Error('Save endpoint failed');
+    return resp.json();
+  }).then(data => {
+    console.info('Remote rule save succeeded', data);
+  }).catch(err => {
+    console.warn('Remote save unavailable', err);
+  });
+}
+
+function sendState() {
+  saveState();
+  alert('Стейт збережено локально. Якщо бекенд доступний, він надішле оновлення на сервер.');
+}
+
+function downloadJson() {
+  saveState();
+  const payload = JSON.parse(localStorage.getItem(STATE_KEY));
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'rules_state.json';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+function switchModalTab(event, paneId) {
+  document.querySelectorAll('.modal-tab').forEach(tab => tab.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  document.querySelectorAll('.modal-panel').forEach(panel => panel.classList.remove('active'));
+  document.getElementById(paneId).classList.add('active');
+}
+
+function applyFilter() {
+  const query = document.getElementById('searchInput').value.toLowerCase();
+  document.querySelectorAll('.cell[data-i]').forEach(cell => {
+    const i = parseInt(cell.dataset.i, 10);
+    const j = parseInt(cell.dataset.j, 10);
+    const labelA = PROCS[i]?.label.toLowerCase() || '';
+    const labelB = PROCS[j]?.label.toLowerCase() || '';
+    const matches = labelA.includes(query) || labelB.includes(query);
+    cell.style.opacity = matches ? '1' : '0.15';
+  });
+}
+
+function getDefaultMedicalInfo(label) {
+  const text = label.toLowerCase();
+  if (/ботул|botox|dysport|xeomin/.test(text)) return {
+    indications: ['Smoothing facial dynamic wrinkles', 'Treatment of chronic migraine', 'Management of hyperhidrosis'],
+    contraindications: ['Pregnancy or breast-feeding', 'Allergy to botulinum toxin', 'Active infection at injection site', 'Neuromuscular disorders', 'Aminoglycosides, muscle relaxants, anticoagulants, NSAIDs'],
+  };
+  if (/філер|fillers|juvederm|belotero|restylane/.test(text)) return {
+    indications: ['Moderate to severe facial wrinkles', 'Lip augmentation', 'Cheek and chin augmentation', 'Restoration of facial volume loss', 'Correction of contour deficiencies'],
+    contraindications: ['Pregnancy or breast-feeding', 'Allergy to filler ingredients', 'Active infection or inflammatory skin disease', 'Autoimmune disorders', 'Bleeding disorders', 'Recent dental work or illness', 'Use of blood-thinning medications', 'Severe allergies', 'Keloid history', 'Immunocompromised status'],
+  };
+  if (/alexstar|laser hair|епіляц/.test(text)) return {
+    indications: ['Unwanted hair removal on face, underarms, bikini, back, legs', 'Treatment of hirsutism', 'Treatment of hypertrichosis'],
+    contraindications: ['History of melanoma or suspicious lesions', 'Keloid scarring', 'Active infections or open lesions', 'Recent isotretinoin, tetracycline, St. John’s wort', 'Autoimmune diseases', 'Pregnancy or nursing'],
+  };
+  return { indications: [], contraindications: [] };
+}
+
+function populateMedicalFields(key, labelA, labelB) {
+  const meta = RULE_META[key] || {};
+  const defaultA = getDefaultMedicalInfo(labelA);
+  const defaultB = getDefaultMedicalInfo(labelB);
+  const indications = meta.indications || [...new Set([...(defaultA.indications || []), ...(defaultB.indications || [])])];
+  const contraindications = meta.contraindications || [...new Set([...(defaultA.contraindications || []), ...(defaultB.contraindications || [])])];
+  document.getElementById('modalIndicationsInput').value = indications.join('\n');
+  document.getElementById('modalContraindicationsInput').value = contraindications.join('\n');
+  document.getElementById('modalConfirmMedical').checked = meta.confirmed_medical || false;
+}
+
+const INTENT_DICTIONARY = {
+  inject: ['ботокс', 'ботулін', 'xеомін', 'dysport', 'xeomin'],
+  laser: ['лазер', 'nordlys', 'clarity', 'alexstar', 'фотомолодження', 'шліфування'],
+  filler: ['філер', 'контурна пластика', 'гіалурон'],
+  dermapen: ['dermapen', 'мезотерапія', 'микронідлінг'],
+  healite: ['healite', 'led', 'світлотерапія'],
+  follow_up: ['що робити', 'далі', 'follow up', 'ставка'],
+  consultation: ['консультація', 'dermatologist', 'onkologi'],
+};
+
+const INTENT_SYNONYMS = {
+  ботокс: 'botox', ботулін: 'botox', ксеомін: 'botox', dysport: 'botox', xeomin: 'botox',
+  nordlys: 'nordlys', clarity: 'nordlys', alexstar: 'alexstar', dermapen: 'dermapen', hydrafacial: 'hydra', aquapure: 'hydra', healite: 'healite',
+  філер: 'fillers', ботокс: 'botox', пілінг: 'dermapen', лазер: 'nordlys', епіляція: 'alexstar'
+};
+
+const DECISION_LOGIC = {
+  description: 'The matrix is the rules engine core. It validates procedure pairs, minimum intervals, and escalates unknown or risky combinations to doctor review. Only approved rules can auto-book.',
+  flow: ['intent_normalisation', 'rule_evaluation', 'context_check', 'decision_output'],
+  security: 'Public messages include only patient ID and procedure labels; sensitive medical history is kept in secure storage.',
+};
+
+const RULES = [];
+const RULES_BY_PAIR = {};
+const RULE_META = {};
+
+function buildRuleEntry(i, j, value) {
+  const a = PROCS[i].id, b = PROCS[j].id;
+  const key = [a, b].sort().join('_');
+  const existing = RULE_META[key] || {};
+  const procA = PROCS[i], procB = PROCS[j];
+  const v = value === null ? { type: 'warn', days: null } : value;
+  const existingStatus = existing.status || 'ai_draft';
+  const existingSource = existing.source || 'ai';
+  const existingPriority = existing.priority || ((procA.category.includes('Laser') || procB.category.includes('Laser') || procA.category.includes('Injection') || procB.category.includes('Injection')) ? 'L2' : 'L3');
+  const minDays = v.type === 'ok' ? (v.days || 0) : null;
+  const decision = v.type === 'no'
+    ? 'BLOCK'
+    : (v.type === 'warn'
+      ? 'APPROVAL_REQUIRED'
+      : (existingStatus === 'approved' ? 'ALLOW' : 'WARN'));
+  const status = existingStatus;
+  const source = existingSource;
+  const priority = existingPriority;
+  const confidence = existing.confidence != null ? existing.confidence : 60;
+  const patient_questions = Array.isArray(existing.patient_questions) ? existing.patient_questions : (existing.patient_questions ? [existing.patient_questions] : []);
+  const notesText = existing.notes || '';
+  const exceptions = existing.exceptions || '';
+  const message = existing.message || '';
+  const audit = existing.audit || {
+    created_by: 'ai',
+    created_at: new Date().toISOString(),
+    approved_by: null,
+    approved_at: null,
+    modified_by: null,
+    modified_at: null,
+  };
+  if (status === 'approved' && !audit.approved_at) {
+    audit.approved_at = new Date().toISOString();
+    audit.approved_by = existing.approved_by || 'system';
+  }
+  return {
+    rule_id: `rule_${key}`,
+    procedure_a_id: a,
+    procedure_b_id: b,
+    procedure_a_label: procA.label,
+    procedure_b_label: procB.label,
+    category_a: procA.category,
+    category_b: procB.category,
+    type: v.type,
+    decision_result: decision,
+    min_days: minDays,
+    recommended_days: minDays !== null ? (minDays + 7) : null,
+    approval_required: decision !== 'ALLOW',
+    auto_book_allowed: status === 'approved' && v.type === 'ok',
+    confidence,
+    status,
+    source,
+    priority,
+    notes: notesText,
+    patient_questions,
+    exceptions,
+    message,
+    audit,
+  };
+}
+
+function buildRules() {
+  RULES.length = 0;
+  Object.keys(RULES_BY_PAIR).forEach(key => delete RULES_BY_PAIR[key]);
+  for (let i = 0; i < N; i++) {
+    for (let j = i + 1; j < N; j++) {
+      const value = matrix[i][j];
+      const rule = buildRuleEntry(i, j, value);
+      RULES.push(rule);
+      const pairKey = rule.procedure_a_id < rule.procedure_b_id ? `${rule.procedure_a_id}_${rule.procedure_b_id}` : `${rule.procedure_b_id}_${rule.procedure_a_id}`;
+      RULES_BY_PAIR[pairKey] = rule;
+      if (!RULE_META[pairKey]) {
+        RULE_META[pairKey] = {
+          status: rule.status,
+          source: rule.source,
+          priority: rule.priority,
+          confidence: rule.confidence,
+          notes: rule.notes,
+          patient_questions: rule.patient_questions,
+          exceptions: rule.exceptions,
+          message: rule.message,
+          audit: { ...rule.audit },
+        };
+      }
+    }
+  }
+}
+
+function getRule(i, j) {
+  if (i < 0 || j < 0 || i >= N || j >= N) return null;
+  const a = PROCS[i].id, b = PROCS[j].id;
+  const key = [a, b].sort().join('_');
+  return RULES_BY_PAIR[key];
+}
+
+function updateDashboard() {
+  const approved = RULES.filter(r => r.status === 'approved').length;
+  const draft = RULES.filter(r => r.status === 'ai_draft').length;
+  const reviewed = RULES.filter(r => r.status === 'reviewed').length;
+  const lowConf = RULES.filter(r => r.confidence < 60).length;
+  const unknown = RULES.filter(r => r.type === 'warn' && r.status !== 'approved').length;
+  document.getElementById('countApproved').textContent = approved;
+  document.getElementById('countDraft').textContent = draft + reviewed;
+  document.getElementById('countLowConf').textContent = lowConf;
+  document.getElementById('countUnknown').textContent = unknown;
+}
+
+function normalizeIntent(input) {
+  if (!input) return { intent: 'unknown', confidence: 0 };
+  const text = input.toLowerCase();
+  for (const [intent, tokens] of Object.entries(INTENT_DICTIONARY)) {
+    if (tokens.some(keyword => text.includes(keyword))) return { intent, confidence: 80 };
+  }
+  return { intent: 'review', confidence: 30 };
+}
+
+function evaluateBooking({ procedureFrom, procedureTo, daysElapsed, patientType, symptoms = [] }) {
+  const fromIndex = PROCS.findIndex(p => p.id === procedureFrom);
+  const toIndex = PROCS.findIndex(p => p.id === procedureTo);
+  if (fromIndex < 0 || toIndex < 0) return { result: 'APPROVAL_REQUIRED', reason: 'Procedure not found' };
+  const rule = getRule(fromIndex, toIndex);
+  if (!rule) return { result: 'APPROVAL_REQUIRED', reason: 'Rule missing - doctor review' };
+  if (patientType === 'new') return { result: 'APPROVAL_REQUIRED', reason: 'New patient intake required' };
+  if (rule.status !== 'approved') return { result: 'APPROVAL_REQUIRED', reason: 'Rule not approved' };
+  if (rule.type === 'no') return { result: 'BLOCK', reason: 'Procedure pair incompatible' };
+  if (rule.min_days !== null && daysElapsed < rule.min_days) {
+    return { result: 'BLOCK', reason: `Requires ${rule.min_days} days between procedures` };
+  }
+  if (rule.min_days !== null && daysElapsed < rule.recommended_days) {
+    const check = symptoms.includes('sunburn') ? 'BLOCK' : 'WARN';
+    return { result: check, reason: rule.patient_questions.length ? `Requires confirmation: ${rule.patient_questions.join(', ')}` : 'Within recommended window' };
+  }
+  return { result: 'ALLOW', reason: 'Approved rule and interval satisfied' };
+}
+
+function downloadJson() {
+  buildRules();
+  const payload = {
+    clinic: 'Revive Clinic',
+    version: 'draft-v1',
+    generated_at: new Date().toISOString(),
+    procedures: PROCS.map(proc => ({ id: proc.id, label: proc.label, category: proc.category, price: proc.price, device: proc.device, invasive: proc.invasive, requires_consultation: proc.requires_consultation })),
+    rules: RULES.map(r => ({ ...r, audit: { ...r.audit } })),
+    intent_dictionary: INTENT_DICTIONARY,
+    decision_logic: DECISION_LOGIC,
+    dashboard_stats: {
+      approved: RULES.filter(r => r.status === 'approved').length,
+      draft: RULES.filter(r => r.status === 'ai_draft').length,
+      reviewed: RULES.filter(r => r.status === 'reviewed').length,
+      low_confidence: RULES.filter(r => r.confidence < 60).length,
+    },
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'revive-rules-engine.json';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+// ── DEFAULT MATRIX ────────────────────────────────────────────────────────────
+// Values: number = days, 'no' = incompatible, 'warn' = doctor decision, 'same' = diagonal
+// null = unknown (needs doctor input) → shown as '?'
+
+function defaultVal(i, j) {
+  const a = PROCS[i].id, b = PROCS[j].id;
+  if (i === j) return 'same';
+
+  const pair = [a, b].sort().join('_');
+
+  const rules = {
+    // БОТОКС
+    'botox_fillers':   '0w',  // можна разом але часто за рішенням лікаря
+    'botox_biorevin':  '0',
+    'botox_mesotx':    '0',
+    'botox_endymed':   '14',
+    'botox_endypro':   '14',
+    'botox_smas':      '14',
+    'botox_dermapen':  '7',
+    'botox_dermadrop': '7',
+    'botox_hydra':     '7',
+    'botox_healite':   '0',
+    'botox_nordlys':   '14',
+    'botox_alexstar':  '14',
+    'botox_endybody':  '0',
+    'botox_emtone':    '0',
+    'botox_emsculpt':  '0',
+    'botox_endosphre': '0',
+    'botox_icoone':    '0',
+    'botox_robolex':   '0',
+    'botox_visia':     '0',
+    'botox_dermosco':  '0',
+    'botox_uzi':       '0',
+    // ФІЛЕРИ
+    'fillers_biorevin':  '0w',
+    'fillers_mesotx':    '0w',
+    'fillers_endymed':   '14',
+    'fillers_endypro':   '14',
+    'fillers_smas':      '14',
+    'fillers_dermapen':  '14',
+    'fillers_dermadrop': '7',
+    'fillers_hydra':     '7',
+    'fillers_healite':   '0',
+    'fillers_nordlys':   '14',
+    'fillers_alexstar':  '14',
+    'fillers_endybody':  '0',
+    'fillers_emtone':    '0',
+    'fillers_emsculpt':  '0',
+    'fillers_endosphre': '0',
+    'fillers_icoone':    '0',
+    'fillers_robolex':   '0',
+    'fillers_visia':     '0',
+    'fillers_dermosco':  '0',
+    'fillers_uzi':       '0',
+    // БІОРЕВ + МЕЗО
+    'biorevin_mesotx':    '0w',
+    'biorevin_endymed':   '7',
+    'biorevin_endypro':   '7',
+    'biorevin_smas':      '14',
+    'biorevin_dermapen':  '7',
+    'biorevin_dermadrop': '0',
+    'biorevin_hydra':     '7',
+    'biorevin_healite':   '0',
+    'biorevin_nordlys':   '14',
+    'biorevin_alexstar':  '7',
+    'biorevin_endybody':  '0',
+    'biorevin_emtone':    '0',
+    'biorevin_emsculpt':  '0',
+    'biorevin_endosphre': '0',
+    'biorevin_icoone':    '0',
+    'biorevin_robolex':   '0',
+    'biorevin_visia':     '0',
+    'biorevin_dermosco':  '0',
+    'biorevin_uzi':       '0',
+    'mesotx_endymed':     '7',
+    'mesotx_endypro':     '7',
+    'mesotx_smas':        '14',
+    'mesotx_dermapen':    '7',
+    'mesotx_dermadrop':   '0',
+    'mesotx_hydra':       '7',
+    'mesotx_healite':     '0',
+    'mesotx_nordlys':     '14',
+    'mesotx_alexstar':    '7',
+    'mesotx_endybody':    '0',
+    'mesotx_emtone':      '0',
+    'mesotx_emsculpt':    '0',
+    'mesotx_endosphre':   '0',
+    'mesotx_icoone':      '0',
+    'mesotx_robolex':     '0',
+    'mesotx_visia':       '0',
+    'mesotx_dermosco':    '0',
+    'mesotx_uzi':         '0',
+    // ENDYMED
+    'endymed_endypro':    '28',
+    'endymed_smas':       '14',
+    'endymed_dermapen':   '14',
+    'endymed_dermadrop':  '14',
+    'endymed_hydra':      '14',
+    'endymed_healite':    '0',
+    'endymed_nordlys':    '21',
+    'endymed_alexstar':   '14',
+    'endymed_endybody':   '14',
+    'endymed_emtone':     'w',
+    'endymed_emsculpt':   'w',
+    'endymed_endosphre':  '14',
+    'endymed_icoone':     '14',
+    'endymed_robolex':    '14',
+    'endymed_visia':      '0',
+    'endymed_dermosco':   '0',
+    'endymed_uzi':        '0',
+    // ENDYPRO
+    'endypro_smas':       '14',
+    'endypro_dermapen':   '14',
+    'endypro_dermadrop':  '7',
+    'endypro_hydra':      '14',
+    'endypro_healite':    '0',
+    'endypro_nordlys':    '14',
+    'endypro_alexstar':   '14',
+    'endypro_endybody':   '7',
+    'endypro_emtone':     'w',
+    'endypro_emsculpt':   'w',
+    'endypro_endosphre':  '7',
+    'endypro_icoone':     '7',
+    'endypro_robolex':    '7',
+    'endypro_visia':      '0',
+    'endypro_dermosco':   '0',
+    'endypro_uzi':        '0',
+    // SMAS
+    'smas_dermapen':   '14',
+    'smas_dermadrop':  '14',
+    'smas_hydra':      '14',
+    'smas_healite':    '0',
+    'smas_nordlys':    '21',
+    'smas_alexstar':   '14',
+    'smas_endybody':   '0',
+    'smas_emtone':     '0',
+    'smas_emsculpt':   '0',
+    'smas_endosphre':  '0',
+    'smas_icoone':     '0',
+    'smas_robolex':    '0',
+    'smas_visia':      '0',
+    'smas_dermosco':   '0',
+    'smas_uzi':        '0',
+    // DERMAPEN
+    'dermapen_dermadrop': '7',
+    'dermapen_hydra':     '7',
+    'dermapen_healite':   '0',
+    'dermapen_nordlys':   '14',
+    'dermapen_alexstar':  '14',
+    'dermapen_endybody':  '0',
+    'dermapen_emtone':    '0',
+    'dermapen_emsculpt':  '0',
+    'dermapen_endosphre': '0',
+    'dermapen_icoone':    '0',
+    'dermapen_robolex':   '0',
+    'dermapen_visia':     '0',
+    'dermapen_dermosco':  '0',
+    'dermapen_uzi':       '0',
+    // DERMADROP
+    'dermadrop_hydra':     '1',
+    'dermadrop_healite':   '0',
+    'dermadrop_nordlys':   '7',
+    'dermadrop_alexstar':  '7',
+    'dermadrop_endybody':  '0',
+    'dermadrop_emtone':    '0',
+    'dermadrop_emsculpt':  '0',
+    'dermadrop_endosphre': '0',
+    'dermadrop_icoone':    '0',
+    'dermadrop_robolex':   '0',
+    'dermadrop_visia':     '0',
+    'dermadrop_dermosco':  '0',
+    'dermadrop_uzi':       '0',
+    // HYDRA
+    'hydra_healite':   '0',
+    'hydra_nordlys':   '7',
+    'hydra_alexstar':  '7',
+    'hydra_endybody':  '0',
+    'hydra_emtone':    '0',
+    'hydra_emsculpt':  '0',
+    'hydra_endosphre': '0',
+    'hydra_icoone':    '0',
+    'hydra_robolex':   '0',
+    'hydra_visia':     '0',
+    'hydra_dermosco':  '0',
+    'hydra_uzi':       '0',
+    // HEALITE
+    'healite_nordlys':   '0',
+    'healite_alexstar':  '0',
+    'healite_endybody':  '0',
+    'healite_emtone':    '0',
+    'healite_emsculpt':  '0',
+    'healite_endosphre': '0',
+    'healite_icoone':    '0',
+    'healite_robolex':   '0',
+    'healite_visia':     '0',
+    'healite_dermosco':  '0',
+    'healite_uzi':       '0',
+    // NORDLYS
+    'nordlys_alexstar':  '14',
+    'nordlys_endybody':  '14',
+    'nordlys_emtone':    '14',
+    'nordlys_emsculpt':  '14',
+    'nordlys_endosphre': '7',
+    'nordlys_icoone':    '7',
+    'nordlys_robolex':   '7',
+    'nordlys_visia':     '0',
+    'nordlys_dermosco':  '0',
+    'nordlys_uzi':       '0',
+    // ALEXSTAR
+    'alexstar_endybody':  '0',
+    'alexstar_emtone':    '0',
+    'alexstar_emsculpt':  '0',
+    'alexstar_endosphre': '0',
+    'alexstar_icoone':    '0',
+    'alexstar_robolex':   '0',
+    'alexstar_visia':     '0',
+    'alexstar_dermosco':  '0',
+    'alexstar_uzi':       '0',
+    // ТІЛО між собою
+    'endybody_emtone':    '7',
+    'endybody_emsculpt':  '7',
+    'endybody_endosphre': '7',
+    'endybody_icoone':    '7',
+    'endybody_robolex':   '7',
+    'endybody_visia':     '0',
+    'endybody_dermosco':  '0',
+    'endybody_uzi':       '0',
+    'emtone_emsculpt':    '7',
+    'emtone_endosphre':   '7',
+    'emtone_icoone':      '7',
+    'emtone_robolex':     '7',
+    'emtone_visia':       '0',
+    'emtone_dermosco':    '0',
+    'emtone_uzi':         '0',
+    'emsculpt_endosphre': '7',
+    'emsculpt_icoone':    '7',
+    'emsculpt_robolex':   '7',
+    'emsculpt_visia':     '0',
+    'emsculpt_dermosco':  '0',
+    'emsculpt_uzi':       '0',
+    'endosphre_icoone':   '7',
+    'endosphre_robolex':  '7',
+    'endosphre_visia':    '0',
+    'endosphre_dermosco': '0',
+    'endosphre_uzi':      '0',
+    'icoone_robolex':     '7',
+    'icoone_visia':       '0',
+    'icoone_dermosco':    '0',
+    'icoone_uzi':         '0',
+    'robolex_visia':      '0',
+    'robolex_dermosco':   '0',
+    'robolex_uzi':        '0',
+    // ДІАГНОСТИКА
+    'visia_dermosco':  '0',
+    'visia_uzi':       '0',
+    'dermosco_uzi':    '0',
+  };
+
+  const v = rules[pair];
+  if (!v) return null; // unknown
+
+  if (v === 'no') return { type: 'no', days: null };
+  if (v === 'w' || v === '0w') return { type: 'warn', days: v === '0w' ? 0 : null };
+  return { type: 'ok', days: parseInt(v) };
+}
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let matrix = [];
+let notes = {};
+
+function initMatrix() {
+  matrix = [];
+  for (let i = 0; i < N; i++) {
+    matrix[i] = [];
+    for (let j = 0; j < N; j++) {
+      matrix[i][j] = defaultVal(i, j);
+    }
+  }
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+function getCellClass(v) {
+  if (!v || v === 'same') return 'same';
+  if (v === null) return 'warn'; // unknown = needs doctor
+  if (typeof v === 'object') {
+    if (v.type === 'no') return 'no';
+    if (v.type === 'warn') return 'warn';
+    return 'ok';
+  }
+  return 'warn';
+}
+
+function getCellText(v) {
+  if (!v || v === 'same') return '×';
+  if (v === null) return '?';
+  if (typeof v === 'object') {
+    if (v.type === 'no') return '✗';
+    if (v.type === 'warn') return v.days !== null ? `${v.days}д*` : '?*';
+    if (v.type === 'ok') return v.days === 0 ? '0д' : `${v.days}д`;
+  }
+  return '?';
+}
+
+function renderMatrix() {
+  const head = document.getElementById('matrixHead');
+  const body = document.getElementById('matrixBody');
+
+  // Column headers
+  let hRow = `<tr><th class="corner">↓ Після \ До →</th>`;
+  PROCS.forEach(([id, label, cat]) => {
+    hRow += `<th class="col-hdr"><span class="ch-text">${label}</span><span class="ch-cat">${cat}</span></th>`;
+  });
+  hRow += '</tr>';
+  head.innerHTML = hRow;
+
+  // Rows
+  let bodyHtml = '';
+  let lastCat = '';
+
+  PROCS.forEach((proc, i) => {
+    if (proc.category !== lastCat) {
+      bodyHtml += `<tr class="cat-sep"><td colspan="${N+1}">${proc.category}</td></tr>`;
+      lastCat = proc.category;
+    }
+
+    bodyHtml += `<tr>
+      <td class="row-hdr">
+        <span class="rh-cat">${proc.category}</span>
+        ${proc.label}
+      </td>`;
+
+    PROCS.forEach((proc2, j) => {
+      const v = matrix[i][j];
+      const cls = getCellClass(v);
+      const txt = getCellText(v);
+      const key = [proc.id, proc2.id].sort().join('_');
+      const hasNote = notes[key] || RULE_META[key]?.notes;
+      bodyHtml += `<td class="cell ${cls}" data-i="${i}" data-j="${j}" onclick="openModal(${i},${j})">
+        <span class="cell-val ${cls}">${txt}</span>
+        ${hasNote ? '<span style="position:absolute;top:2px;right:3px;font-size:8px;color:var(--amber)">✎</span>' : ''}
+      </td>`;
+    });
+
+    bodyHtml += '</tr>';
+  });
+
+  body.innerHTML = bodyHtml;
+  renderNotes();
+  buildRules();
+  updateDashboard();
+}
+
+// ── MODAL ─────────────────────────────────────────────────────────────────────
+let currentI = -1, currentJ = -1;
+
+function openModal(i, j) {
+  if (i === j) return;
+  currentI = i; currentJ = j;
+
+  const a = PROCS[i].label, b = PROCS[j].label;
+  document.getElementById('modalTitle').textContent = `${a} ↔ ${b}`;
+  document.getElementById('modalSub').textContent =
+    'Мінімальний інтервал: скільки днів потрібно між цими двома процедурами';
+
+  const v = matrix[i][j];
+
+  // reset opts
+  document.querySelectorAll('.modal-opt').forEach(o => o.classList.remove('selected'));
+
+  let days = 0;
+  if (v && typeof v === 'object') {
+    const opt = document.querySelector(`.modal-opt[data-val="${v.type}"]`);
+    if (opt) opt.classList.add('selected');
+    days = v.days !== null ? v.days : 0;
+  } else if (v === null) {
+    const opt = document.querySelector('.modal-opt[data-val="warn"]');
+    if (opt) opt.classList.add('selected');
+  }
+
+  document.getElementById('modalDaysInput').value = days;
+
+  const key = [PROCS[i].id, PROCS[j].id].sort().join('_');
+  const meta = RULE_META[key] || {};
+  document.getElementById('modalNoteInput').value = notes[key] || meta.notes || '';
+  document.getElementById('modalStatusSelect').value = meta.status || 'ai_draft';
+  document.getElementById('modalSourceSelect').value = meta.source || 'ai';
+  document.getElementById('modalPrioritySelect').value = meta.priority || 'L2';
+  document.getElementById('modalConfidenceInput').value = meta.confidence != null ? meta.confidence : 60;
+  document.getElementById('modalQuestionInput').value = (meta.patient_questions || []).join('\n');
+  document.getElementById('modalExceptionsInput').value = meta.exceptions || '';
+  document.getElementById('modalMessageInput').value = meta.message || '';
+
+  updateDaysVisibility();
+  document.getElementById('modalBg').classList.add('open');
+}
+
+function selectOpt(el) {
+  document.querySelectorAll('.modal-opt').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  updateDaysVisibility();
+}
+
+function updateDaysVisibility() {
+  const sel = document.querySelector('.modal-opt.selected');
+  const block = document.getElementById('modalDaysBlock');
+  if (sel && sel.dataset.val === 'ok') {
+    block.style.display = 'block';
+  } else {
+    block.style.display = 'none';
+  }
+}
+
+function saveCell() {
+  const sel = document.querySelector('.modal-opt.selected');
+  if (!sel) { closeModal(); return; }
+
+  const type = sel.dataset.val;
+  const days = parseInt(document.getElementById('modalDaysInput').value) || 0;
+  const note = document.getElementById('modalNoteInput').value.trim();
+
+  let val;
+  if (type === 'ok') val = { type: 'ok', days };
+  else if (type === 'warn') val = { type: 'warn', days: null };
+  else val = { type: 'no', days: null };
+
+  const status = document.getElementById('modalStatusSelect').value;
+  const source = document.getElementById('modalSourceSelect').value;
+  const priority = document.getElementById('modalPrioritySelect').value;
+  const confidence = parseInt(document.getElementById('modalConfidenceInput').value) || 60;
+  const questions = document.getElementById('modalQuestionInput').value.trim().split('\n').filter(Boolean);
+  const exceptions = document.getElementById('modalExceptionsInput').value.trim();
+  const message = document.getElementById('modalMessageInput').value.trim();
+
+  // symmetric
+  matrix[currentI][currentJ] = val;
+  matrix[currentJ][currentI] = val;
+
+  const key = [PROCS[currentI].id, PROCS[currentJ].id].sort().join('_');
+  if (note) notes[key] = note;
+  else delete notes[key];
+
+  RULE_META[key] = {
+    status,
+    source,
+    priority,
+    confidence,
+    notes: note,
+    patient_questions: questions,
+    exceptions,
+    message,
+    audit: {
+      ...RULE_META[key]?.audit,
+      modified_by: 'doctor',
+      modified_at: new Date().toISOString(),
+      approved_by: status === 'approved' ? 'doctor' : RULE_META[key]?.audit?.approved_by || null,
+      approved_at: status === 'approved' ? (RULE_META[key]?.audit?.approved_at || new Date().toISOString()) : null,
+    },
+  };
+
+  closeModal();
+  renderMatrix();
+}
+
+function closeModal() {
+  document.getElementById('modalBg').classList.remove('open');
+  currentI = -1; currentJ = -1;
+}
+
+// ── NOTES RENDER ──────────────────────────────────────────────────────────────
+function renderNotes() {
+  const list = document.getElementById('notesList');
+  const keys = Object.keys(notes);
+  if (!keys.length) {
+    list.innerHTML = '<div class="np-empty">Нотатки ще не додані</div>';
+    return;
+  }
+  list.innerHTML = keys.map(k => {
+    const [a, b] = k.split('_');
+    const na = PROCS.find(proc => proc.id === a)?.label || '?';
+    const nb = PROCS.find(proc => proc.id === b)?.label || '?';
+    return `<div class="np-item">
+      <span class="np-pair">${na} ↔ ${nb}:</span>
+      <span>${notes[k]}</span>
+    </div>`;
+  }).join('');
+}
+
+// ── FILTER MODE ───────────────────────────────────────────────────────────────
+function highlightMode(mode, btn) {
+  document.querySelectorAll('.ctrl-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  document.querySelectorAll('.cell[data-i]').forEach(cell => {
+    const i = parseInt(cell.dataset.i), j = parseInt(cell.dataset.j);
+    const v = matrix[i][j];
+    let show = true;
+
+    if (mode === 'conflicts') {
+      show = v && typeof v === 'object' && v.type === 'no';
+    } else if (mode === 'sameday') {
+      show = v && typeof v === 'object' && v.type === 'ok' && v.days === 0;
+    } else if (mode === 'unknown') {
+      show = v === null || (v && typeof v === 'object' && v.type === 'warn');
+    } else if (mode === 'draft' || mode === 'reviewed' || mode === 'approved' || mode === 'lowconf') {
+      const rule = getRule(i, j);
+      if (!rule) show = mode === 'unknown';
+      else if (mode === 'draft') show = rule.status === 'ai_draft';
+      else if (mode === 'reviewed') show = rule.status === 'reviewed';
+      else if (mode === 'approved') show = rule.status === 'approved';
+      else if (mode === 'lowconf') show = rule.confidence < 60;
+    }
+
+    cell.style.opacity = (mode === 'all' || show) ? '1' : '0.1';
+  });
+}
+
+// ── COPY AS TEXT ──────────────────────────────────────────────────────────────
+function copyMatrix() {
+  let text = 'Матриця сумісності процедур — Revive Clinic\n\n';
+  text += '\t' + PROCS.map(p => p.label).join('\t') + '\n';
+  PROCS.forEach((p, i) => {
+    text += p.label + '\t';
+    text += PROCS.map((_, j) => getCellText(matrix[i][j])).join('\t');
+    text += '\n';
+  });
+  navigator.clipboard.writeText(text).then(() => {
+    alert('Скопійовано в буфер обміну');
+  });
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+loadProcedures();
+
+// Close modal on background click
+document.getElementById('modalBg').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+</script>
+</body>
+</html>
